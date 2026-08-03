@@ -1,0 +1,11 @@
+/**
+ * Credoq Engine — Booking Widget CSS
+ *
+ * PORT INSTRUCTIONS:
+ *   Copy `assets/css/booking-widget.css` (or equivalent) from your v9
+ *   plugin verbatim. The React widget HTML structure is unchanged,
+ *   so the CSS works as-is.
+ *
+ * If your v9 widget CSS is inside the React bundle, leave this file
+ * empty and rely on bundled-in styles.
+ */

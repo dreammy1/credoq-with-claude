@@ -1,0 +1,63 @@
+
+/* Credoq Appointments — Frontend CSS — AUDIT-FIX D-2: enqueued, not inline */
+
+/* Widget container */
+.cq-booking-widget{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:640px;margin:0 auto}
+.cq-widget-title{font-size:18px;font-weight:800;color:#1e293b;margin:0 0 16px}
+.cq-back-btn{background:none;border:none;color:#4f46e5;font-size:14px;font-weight:700;cursor:pointer;padding:0;margin-bottom:12px;display:flex;align-items:center;gap:4px}
+.cq-back-btn:hover{text-decoration:underline}
+
+/* Service grid */
+.cq-service-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
+.cq-service-card{background:#fff;border:1.5px solid #e2e8f0;border-radius:14px;padding:16px;cursor:pointer;transition:all .15s}
+.cq-service-card:hover{border-color:#4f46e5;box-shadow:0 4px 20px rgba(79,70,229,.12);transform:translateY(-2px)}
+.cq-service-name{font-weight:800;font-size:15px;color:#1e293b;margin-bottom:4px}
+.cq-service-loc{font-size:12px;color:#64748b;margin-bottom:4px}
+.cq-service-desc{font-size:12px;color:#94a3b8;margin-bottom:8px;line-height:1.5}
+.cq-service-meta{display:flex;gap:12px;font-size:12px;color:#64748b;font-weight:600}
+
+/* Calendar */
+.cq-calendar-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.cq-cal-header{text-align:center;font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;padding:8px 0}
+.cq-cal-day{text-align:center;padding:10px 4px;border-radius:10px;font-size:13px;font-weight:600;cursor:default;color:#94a3b8}
+.cq-cal-day.available{cursor:pointer;color:#1e293b;background:#f1f5f9}
+.cq-cal-day.available:hover{background:#4f46e5;color:#fff}
+.cq-cal-day.selected{background:#4f46e5;color:#fff}
+.cq-cal-day.today{border:2px solid #4f46e5;color:#4f46e5}
+.cq-cal-day.past{opacity:.35;pointer-events:none}
+
+/* Slots */
+.cq-slots-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:8px;margin-top:8px}
+.cq-slot-btn{padding:10px 8px;border:1.5px solid #e2e8f0;border-radius:10px;background:#fff;font-size:13px;font-weight:700;cursor:pointer;text-align:center;transition:all .15s;color:#1e293b}
+.cq-slot-btn:hover:not(:disabled){border-color:#4f46e5;background:#eef2ff;color:#4f46e5}
+.cq-slot-btn.selected{background:#4f46e5;color:#fff;border-color:#4f46e5}
+.cq-slot-btn:disabled{opacity:.4;cursor:not-allowed;text-decoration:line-through}
+.cq-slot-cap{font-size:10px;font-weight:400;opacity:.7;margin-top:2px}
+
+/* Booking summary */
+.cq-booking-summary{background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:14px;padding:16px 18px;margin-top:12px}
+.cq-summary-row{display:flex;justify-content:space-between;padding:6px 0;font-size:14px;border-bottom:1px solid #e2e8f0}
+.cq-summary-row:last-child{border:none;font-weight:800;font-size:15px}
+.cq-summary-label{color:#64748b}
+.cq-summary-value{color:#1e293b;font-weight:700}
+
+/* Form inputs */
+.cq-form-group{margin-bottom:14px}
+.cq-form-label{display:block;font-size:11px;font-weight:700;color:#475569;margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px}
+.cq-input{width:100%;padding:11px 14px;border:2px solid #e2e8f0;border-radius:10px;font-size:14px;box-sizing:border-box;transition:border-color .15s;font-family:inherit}
+.cq-input:focus{outline:none;border-color:#4f46e5}
+.cq-btn{display:inline-block;padding:12px 24px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;border:none;transition:all .15s;font-family:inherit}
+.cq-btn-primary{background:#4f46e5;color:#fff}
+.cq-btn-primary:hover{background:#4338ca}
+.cq-msg{padding:12px 16px;border-radius:10px;font-size:13px;margin-top:10px}
+.cq-msg-success{background:#dcfce7;color:#16a34a}
+.cq-msg-error{background:#fee2e2;color:#dc2626}
+
+/* Login required */
+.cq-login-required{background:#f8fafc;border:2px dashed #e2e8f0;border-radius:16px;padding:32px;text-align:center;color:#64748b}
+
+/* Responsive */
+@media(max-width:480px){
+    .cq-service-grid{grid-template-columns:1fr}
+    .cq-slots-grid{grid-template-columns:repeat(3,1fr)}
+}

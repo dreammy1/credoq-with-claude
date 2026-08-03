@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Credoq Suite — Technical Documentation</title>
+<style>
+  :root{
+    --bg:#0b0f19; --panel:#121826; --panel2:#161d2e; --line:#232b3d;
+    --text:#e6eaf2; --muted:#8b96ad; --muted2:#5f6b85;
+    --engine:#22d3ee; --appointments:#f59e0b; --events:#a78bfa; --seats:#fb7185; --membership:#34d399;
+    --ok:#34d399; --warn:#f59e0b; --bad:#fb7185;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15px;line-height:1.55;}
+  a{color:inherit;}
+  ::selection{background:#2b6cb055;}
+
+  /* Layout */
+  .shell{display:grid;grid-template-columns:260px 1fr;min-height:100vh;}
+  nav.side{position:sticky;top:0;height:100vh;overflow-y:auto;background:var(--panel);border-right:1px solid var(--line);padding:22px 16px;}
+  nav.side::-webkit-scrollbar{width:6px;} nav.side::-webkit-scrollbar-thumb{background:#2a3348;border-radius:4px;}
+  .brand{display:flex;align-items:center;gap:10px;margin-bottom:22px;padding:0 6px;}
+  .brand .dot{width:10px;height:10px;border-radius:3px;background:linear-gradient(135deg,var(--engine),var(--seats));}
+  .brand b{font-size:15px;letter-spacing:.2px;}
+  .brand span{display:block;font-size:11px;color:var(--muted2);}
+  nav.side a.navlink{display:block;padding:7px 10px;border-radius:7px;color:var(--muted);text-decoration:none;font-size:13.5px;transition:background .15s,color .15s;}
+  nav.side a.navlink:hover{background:#1c2436;color:var(--text);}
+  nav.side a.navlink.active{background:#1c2436;color:var(--text);font-weight:600;}
+  nav.side .grp{margin-top:18px;font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted2);padding:0 10px 6px;}
+
+  main{padding:40px 48px 120px;max-width:1180px;}
+  section{padding-top:26px;scroll-margin-top:20px;}
+  h1{font-size:30px;margin:0 0 6px;letter-spacing:-.01em;}
+  h2{font-size:22px;margin:0 0 14px;padding-bottom:10px;border-bottom:1px solid var(--line);}
+  h3{font-size:16px;margin:26px 0 10px;color:var(--text);}
+  p.lead{color:var(--muted);font-size:15.5px;max-width:760px;}
+  .sub{color:var(--muted2);font-size:13px;margin-top:-4px;margin-bottom:26px;}
+  code, .mono{font-family:var(--mono);font-size:12.6px;}
+  code{background:#1a2133;border:1px solid var(--line);padding:1.5px 6px;border-radius:5px;color:#a8c7ff;}
+
+  /* Badges */
+  .pill{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;letter-spacing:.02em;padding:2.5px 9px;border-radius:99px;text-transform:uppercase;}
+  .pill.engine{background:#22d3ee1f;color:var(--engine);}
+  .pill.appointments{background:#f59e0b1f;color:var(--appointments);}
+  .pill.events{background:#a78bfa1f;color:var(--events);}
+  .pill.seats{background:#fb71751f;color:var(--seats);}
+  .pill.membership{background:#34d3991f;color:var(--membership);}
+  .pill.p0{background:#fb71751f;color:var(--bad);}
+  .pill.p1{background:#f59e0b1f;color:var(--warn);}
+  .pill.p2{background:#5f6b8524;color:var(--muted);}
+
+  /* Cards */
+  .card{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin-bottom:16px;}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+  @media(max-width:900px){.grid2,.grid3{grid-template-columns:1fr;}}
+
+  /* Diagram */
+  .diagram-wrap{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:14px;overflow-x:auto;}
+  .legend{display:flex;gap:16px;flex-wrap:wrap;margin:12px 0 18px;font-size:12.5px;color:var(--muted);}
+  .legend i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px;vertical-align:middle;}
+  svg text{font-family:var(--sans);}
+  .node{cursor:pointer;transition:opacity .2s;}
+  .node rect{stroke-width:1.4;transition:filter .2s;}
+  .node:hover rect{filter:brightness(1.25);}
+  .flow-edge{stroke:#3a465e;stroke-width:1.6;fill:none;marker-end:url(#arrow);transition:stroke .2s,stroke-width .2s;}
+  .flow-edge.hl{stroke:#e6eaf2;stroke-width:2.4;}
+  .dim{opacity:.28;}
+  #flow-caption{font-size:12.5px;color:var(--muted);margin-top:10px;min-height:18px;}
+
+  /* Settings matrix */
+  .toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
+  .toolbar input[type=text]{background:#0e1420;border:1px solid var(--line);color:var(--text);padding:8px 12px;border-radius:8px;font-size:13.5px;width:240px;}
+  .toolbar button{background:#0e1420;border:1px solid var(--line);color:var(--muted);padding:7px 13px;border-radius:8px;font-size:12.5px;cursor:pointer;font-weight:600;}
+  .toolbar button.active{color:var(--text);border-color:#3a465e;background:#1c2436;}
+  table.matrix{width:100%;border-collapse:collapse;font-size:13px;}
+  table.matrix th{text-align:left;color:var(--muted2);font-size:11px;text-transform:uppercase;letter-spacing:.05em;padding:8px 10px;border-bottom:1px solid var(--line);}
+  table.matrix td{padding:10px 10px;border-bottom:1px solid #1a2133;vertical-align:top;}
+  table.matrix tr:hover td{background:#141b2c;}
+  .setting-name{font-family:var(--mono);font-size:12.5px;color:#dbe4ff;white-space:nowrap;}
+  .eff{font-size:12.6px;}
+  .eff b{color:var(--ok);} .eff b.off{color:var(--bad);}
+  .row-hidden{display:none;}
+
+  /* Audit-style list */
+  .bug{border-left:3px solid var(--bad);background:#1a1420;padding:12px 16px;border-radius:0 8px 8px 0;margin-bottom:10px;}
+  .bug.p1{border-color:var(--warn);background:#1a1712;}
+  .bug h4{margin:0 0 4px;font-size:14px;}
+  .bug .file{color:var(--muted);font-size:12px;margin-bottom:6px;}
+
+  ul.guide{padding-left:20px;} ul.guide li{margin-bottom:8px;color:var(--muted);}
+  ul.guide li b{color:var(--text);}
+  footer{color:var(--muted2);font-size:12px;padding:30px 48px;border-top:1px solid var(--line);}
+</style>
+</head>
+<body>
+<div class="shell">
+  <nav class="side">
+    <div class="brand"><div class="dot"></div><div><b>Credoq Suite</b><span>Internal technical docs</span></div></div>
+    <a class="navlink" href="#overview">Overview</a>
+    <a class="navlink" href="#architecture">Architecture &amp; Data Flow</a>
+    <a class="navlink" href="#lifecycle">Events + Seats Lifecycle</a>
+    <div class="grp">Deep Dives</div>
+    <a class="navlink" href="#apt-seats">Appointments + Seats Lifecycle</a>
+    <a class="navlink" href="#engine-core">Engine Core Lifecycle</a>
+    <a class="navlink" href="#membership-core">Membership Lifecycle</a>
+    <div class="grp">Ecosystem</div>
+    <a class="navlink" href="#ecosystem">Unified 5-Plugin Ecosystem</a>
+    <a class="navlink" href="#usecases">Business Use Cases</a>
+    <a class="navlink" href="#journeys">Admin &amp; Frontend Journeys</a>
+    <div class="grp">Reference</div>
+    <a class="navlink" href="#settings">Settings Matrix</a>
+    <a class="navlink" href="#testsuite">Automated Test Suite</a>
+    <div class="grp">Quality</div>
+    <a class="navlink" href="#audit">Audit Summary</a>
+    <a class="navlink" href="#checklist">Priority Checklist</a>
+    <a class="navlink" href="#uiux">UI/UX Guidelines</a>
+  </nav>
+
+  <main>
+    <section id="overview">
+      <h1>Credoq Suite</h1>
+      <p class="lead">Five interconnected WordPress plugins — one core engine plus four addons — that together form a booking, registration, and membership platform. This document is the single reference for how they fit together, what every admin toggle actually does, and where the codebase currently stands.</p>
+      <div class="grid3" style="margin-top:22px;">
+        <div class="card"><span class="pill engine">Engine</span><h3 style="margin-top:10px;">credoq-engine</h3><p style="color:var(--muted);font-size:13px;margin:0;">Forms/booking builder, React widget, field-type registry, SMTP, notifications, audit log. Every addon boots through it.</p></div>
+        <div class="card"><span class="pill appointments">Addon</span><h3 style="margin-top:10px;">credoq-appointments</h3><p style="color:var(--muted);font-size:13px;margin:0;">Staff, services, slot availability, multi-session bookings.</p></div>
+        <div class="card"><span class="pill events">Addon</span><h3 style="margin-top:10px;">credoq-events</h3><p style="color:var(--muted);font-size:13px;margin:0;">Event calendar, ticketed registration, capacity.</p></div>
+        <div class="card"><span class="pill seats">Addon</span><h3 style="margin-top:10px;">credoq-seats</h3><p style="color:var(--muted);font-size:13px;margin:0;">Visual seat-map builder; connects to Appointments or Events.</p></div>
+        <div class="card"><span class="pill membership">Addon</span><h3 style="margin-top:10px;">credoq-membership</h3><p style="color:var(--muted);font-size:13px;margin:0;">Plans, credit ledger, content/page restriction.</p></div>
+        <div class="card"><h3 style="margin-top:10px;">Ecosystem rule</h3><p style="color:var(--muted);font-size:13px;margin:0;">Every addon is optional and self-detects the others via <code>class_exists()</code> — none hard-depend on each other except Engine.</p></div>
+      </div>
+    </section>
+
+    <section id="architecture">
+      <h2>Architecture &amp; Data Flow</h2>
+      <p class="lead">Click a node to trace its request path. Lines show real hook/DB relationships, not just plugin boundaries.</p>
+      <div class="legend">
+        <span><i style="background:var(--engine);"></i>Engine</span>
+        <span><i style="background:var(--appointments);"></i>Appointments</span>
+        <span><i style="background:var(--events);"></i>Events</span>
+        <span><i style="background:var(--seats);"></i>Seats</span>
+        <span><i style="background:var(--membership);"></i>Membership</span>
+      </div>
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 1080 620" width="100%" style="min-width:820px;">
+          <defs>
+            <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#3a465e"/></marker>
+          </defs>
+
+          <!-- Layer labels -->
+          <text x="20" y="30" fill="#5f6b85" font-size="11" letter-spacing="1">FRONTEND</text>
+          <text x="20" y="170" fill="#5f6b85" font-size="11" letter-spacing="1">AJAX / REST</text>
+          <text x="20" y="330" fill="#5f6b85" font-size="11" letter-spacing="1">BACKEND HOOKS</text>
+          <text x="20" y="470" fill="#5f6b85" font-size="11" letter-spacing="1">DATABASE</text>
+          <text x="20" y="580" fill="#5f6b85" font-size="11" letter-spacing="1">PAYMENTS</text>
+
+          <!-- Edges (drawn first, under nodes) -->
+          <g id="edges">
+            <path class="flow-edge" data-e="widget-submit" d="M170,60 L170,150"/>
+            <path class="flow-edge" data-e="submit-handler" d="M170,190 L170,270"/>
+            <path class="flow-edge" data-e="handler-fieldevent" d="M230,300 L420,300"/>
+            <path class="flow-edge" data-e="handler-fieldapt" d="M230,300 L420,230"/>
+            <path class="flow-edge" data-e="handler-seatmap" d="M230,300 L420,370"/>
+            <path class="flow-edge" data-e="fieldevent-eventsbridge" d="M480,300 L480,230 L640,230"/>
+            <path class="flow-edge" data-e="seatmap-bookingrepo" d="M480,370 L640,400"/>
+            <path class="flow-edge" data-e="eventsbridge-seatmap" d="M700,230 L700,370"/>
+            <path class="flow-edge" data-e="fieldevent-eventbookings" d="M480,300 L700,460"/>
+            <path class="flow-edge" data-e="seatmap-seatbookings" d="M480,370 L500,460"/>
+            <path class="flow-edge" data-e="submissions-db" d="M170,300 L170,460"/>
+            <path class="flow-edge" data-e="fieldevent-wc" d="M480,320 L480,560"/>
+            <path class="flow-edge" data-e="wc-eventsbridge" d="M540,560 L700,240"/>
+            <path class="flow-edge" data-e="fieldevent-credit" d="M420,320 L280,460 L280,530"/>
+            <path class="flow-edge" data-e="notifier" d="M170,300 L900,270"/>
+          </g>
+
+          <!-- Nodes -->
+          <g class="node" data-flow="widget-submit,submit-handler,handler-fieldevent,handler-fieldapt,handler-seatmap">
+            <rect x="90" y="20" width="160" height="40" rx="9" fill="#0e1420" stroke="#22d3ee"/>
+            <text x="170" y="44" text-anchor="middle" fill="#e6eaf2" font-size="12.5" font-weight="600">React Widget (UI)</text>
+          </g>
+
+          <g class="node" data-flow="widget-submit,submit-handler">
+            <rect x="90" y="150" width="160" height="40" rx="9" fill="#0e1420" stroke="#22d3ee"/>
+            <text x="170" y="174" text-anchor="middle" fill="#e6eaf2" font-size="12.5" font-weight="600">Ajax\Booking.php</text>
+          </g>
+
+          <g class="node" data-flow="submit-handler,handler-fieldevent,handler-fieldapt,handler-seatmap,submissions-db,notifier">
+            <rect x="90" y="270" width="160" height="60" rx="9" fill="#0e1420" stroke="#22d3ee"/>
+            <text x="170" y="294" text-anchor="middle" fill="#e6eaf2" font-size="12.5" font-weight="600">Submission_Handler</text>
+            <text x="170" y="310" text-anchor="middle" fill="#8b96ad" font-size="10.5">sanitize → price → insert</text>
+          </g>
+
+          <g class="node" data-flow="handler-fieldapt">
+            <rect x="420" y="210" width="150" height="40" rx="9" fill="#1c1608" stroke="#f59e0b"/>
+            <text x="495" y="234" text-anchor="middle" fill="#e6eaf2" font-size="12">Field_Appointment</text>
+          </g>
+
+          <g class="node" data-flow="handler-fieldevent,fieldevent-eventsbridge,fieldevent-eventbookings,fieldevent-wc,fieldevent-credit">
+            <rect x="420" y="280" width="150" height="40" rx="9" fill="#181228" stroke="#a78bfa"/>
+            <text x="495" y="304" text-anchor="middle" fill="#e6eaf2" font-size="12">Field_Event</text>
+          </g>
+
+          <g class="node" data-flow="handler-seatmap,seatmap-bookingrepo,seatmap-seatbookings,eventsbridge-seatmap">
+            <rect x="420" y="350" width="150" height="40" rx="9" fill="#200f14" stroke="#fb7185"/>
+            <text x="495" y="374" text-anchor="middle" fill="#e6eaf2" font-size="12">Seat_Map_Field</text>
+          </g>
+
+          <g class="node" data-flow="fieldevent-eventsbridge,eventsbridge-seatmap,wc-eventsbridge">
+            <rect x="640" y="210" width="160" height="40" rx="9" fill="#200f14" stroke="#fb7185"/>
+            <text x="720" y="234" text-anchor="middle" fill="#e6eaf2" font-size="12">Events_Bridge</text>
+          </g>
+
+          <g class="node" data-flow="seatmap-bookingrepo,eventsbridge-seatmap">
+            <rect x="640" y="380" width="160" height="40" rx="9" fill="#200f14" stroke="#fb7185"/>
+            <text x="720" y="404" text-anchor="middle" fill="#e6eaf2" font-size="12">Booking_Repository</text>
+          </g>
+
+          <g class="node" data-flow="submissions-db">
+            <rect x="90" y="450" width="160" height="40" rx="9" fill="#0e1420" stroke="#22d3ee"/>
+            <text x="170" y="474" text-anchor="middle" fill="#e6eaf2" font-size="12">wp_credoq_submissions</text>
+          </g>
+
+          <g class="node" data-flow="fieldevent-credit">
+            <rect x="210" y="510" width="160" height="40" rx="9" fill="#0d1f16" stroke="#34d399"/>
+            <text x="290" y="534" text-anchor="middle" fill="#e6eaf2" font-size="12">Membership credit ledger</text>
+          </g>
+
+          <g class="node" data-flow="fieldevent-eventbookings">
+            <rect x="620" y="440" width="170" height="40" rx="9" fill="#181228" stroke="#a78bfa"/>
+            <text x="705" y="464" text-anchor="middle" fill="#e6eaf2" font-size="12">wp_credoq_event_bookings</text>
+          </g>
+
+          <g class="node" data-flow="seatmap-seatbookings">
+            <rect x="420" y="440" width="170" height="40" rx="9" fill="#200f14" stroke="#fb7185"/>
+            <text x="505" y="464" text-anchor="middle" fill="#e6eaf2" font-size="12">wp_credoq_seat_bookings</text>
+          </g>
+
+          <g class="node" data-flow="fieldevent-wc,wc-eventsbridge">
+            <rect x="400" y="540" width="220" height="42" rx="9" fill="#161d2e" stroke="#e6eaf2"/>
+            <text x="510" y="565" text-anchor="middle" fill="#e6eaf2" font-size="12">WooCommerce Order</text>
+          </g>
+
+          <g class="node" data-flow="notifier">
+            <rect x="850" y="250" width="180" height="40" rx="9" fill="#0e1420" stroke="#22d3ee"/>
+            <text x="940" y="274" text-anchor="middle" fill="#e6eaf2" font-size="12">Submission_Notifier</text>
+          </g>
+        </svg>
+        <div id="flow-caption">Hover or tap a node to trace its data flow.</div>
+      </div>
+
+      <h3>What each edge means</h3>
+      <div class="grid2">
+        <div class="card">
+          <b style="color:#dbe4ff;">Free/credit path (synchronous)</b>
+          <p style="color:var(--muted);font-size:13px;">Widget submit → <code>Ajax\Booking</code> → <code>Submission_Handler::process()</code> (sanitize, recompute price, insert submission row inside a DB transaction) → each field's <code>on_submission()</code> fires in form order → <code>Field_Event</code> writes <code>event_bookings</code> + <code>Seat_Map_Field</code> confirms seats in <code>seat_bookings</code> → transaction commits → <code>credoq_after_submission</code> fires <code>Submission_Notifier</code> (bell + email).</p>
+        </div>
+        <div class="card">
+          <b style="color:#dbe4ff;">WooCommerce path (asynchronous)</b>
+          <p style="color:var(--muted);font-size:13px;">Same as above, but the booking/registration row is created as <code>pending_payment</code> and a WC cart item is added. Seats are confirmed immediately at submission (reserved through checkout) — <code>WooCommerce::on_complete()</code>/<code>on_cancel()</code> later fire <code>credoq_event_booking_confirmed</code>/<code>_cancelled</code>, which <code>Events_Bridge</code> uses as a defense-in-depth re-sync (idempotent).</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="lifecycle">
+      <h2>Request Lifecycle — Seat-Mapped Event Registration</h2>
+      <p class="lead">The full, verified end-to-end path for an Events + Seats registration, step by step.</p>
+      <ol style="color:var(--muted);font-size:13.5px;padding-left:22px;">
+        <li><b style="color:var(--text);">Admin</b> connects a published seat plan to an event (Seats → Plan Builder → Connect to a service). <code>connected_ids</code> stores the event ID(s).</li>
+        <li><b style="color:var(--text);">Visitor</b> opens the registration form. <code>Events_Bridge::inject_widget_config()</code> has already injected an <code>{event_id → plan_id}</code> map into the widget config via the <code>credoq_widget_config</code> filter.</li>
+        <li>Visitor selects an event in the calendar field. React's <code>SeatMapField</code> resolves the plan live from that map and renders the map (AJAX <code>credoq_seats_load_map</code>).</li>
+        <li>Clicking a seat fires <code>credoq_seats_hold</code> — a 5-minute hold row is written to <code>seat_bookings</code>, scoped by <code>(plan_id, date, event_id)</code>.</li>
+        <li>Visitor submits. <code>Submission_Handler</code> recomputes price via each field's <code>price_contribution()</code>/<code>wc_contribution()</code> — <code>Field_Event</code> asks the <code>credoq_events_seat_overrides</code> filter for the seat plan's real total and uses it <b>in place of</b> its own flat price × qty.</li>
+        <li><code>Field_Event::on_submission()</code> writes the <code>event_bookings</code> row (quantity = real seat count, not the calendar's qty stepper) and either confirms it immediately (free/credit) or creates a WC cart item (<code>pending_payment</code>).</li>
+        <li><code>Seat_Map_Field::on_submission()</code> resolves the event unambiguously from the submission payload and confirms the actual seats in <code>seat_bookings</code>, each with its own recomputed price.</li>
+        <li>If paid: WooCommerce order completes → <code>on_complete()</code> flips the booking to <code>confirmed</code> and fires <code>credoq_event_booking_confirmed</code> (Events_Bridge re-syncs seats, idempotent). If cancelled/refunded/failed → <code>on_cancel()</code> fires <code>credoq_event_booking_cancelled</code> per booking row → seats release.</li>
+        <li><code>credoq_after_submission</code> fires regardless of payment outcome → bell notification + admin email.</li>
+      </ol>
+    </section>
+
+    <section id="apt-seats">
+      <h2>Appointments + Seats — Full Lifecycle</h2>
+      <p class="lead">The reference-standard integration in the suite — Events + Seats was built to match this. Appointments uses its own bespoke booking pipeline, not the generic Forms Builder submission path Events relies on.</p>
+
+      <h3>Request lifecycle, step by step</h3>
+      <ol style="color:var(--muted);font-size:13.5px;padding-left:22px;">
+        <li><b style="color:var(--text);">Visitor</b> picks a service. If <code>show_staff_selector</code> is on, they pick a staff member (or the widget auto-assigns one); each staff member's own <code>price_multiplier</code> applies to the service's base price.</li>
+        <li><code>Slot_Generator</code> resolves available times for the chosen date by checking, in priority order: <b>(1)</b> the staff member's own <code>special_dates</code> entry for that exact date (fully closed, or custom hours/price for that date) — <b>(2)</b> the staff member's recurring weekly hours (<code>avail_{day}_enabled</code> + hours) — <b>(3)</b> the service's own weekly hours as a fallback. The first layer that has an explicit answer wins; a later layer never silently overrides an earlier one's "closed" (an important fix — an empty array and a genuinely unset day are treated differently, not conflated).</li>
+        <li>If <code>allow_multi_booking</code> is enabled, the visitor can select several sessions/dates in one submission; <code>multi_price_mode</code> decides whether the total is <i>Per Session</i> (base price × session count) or a flat <i>Fixed Day Rate</i> regardless of count.</li>
+        <li>If the service has <code>visual_seats_enabled</code> and a connected published seat plan, the plain quantity control is replaced by the seat map (same <code>credoq_seats_load_map</code>/<code>hold</code>/<code>release</code>/<code>get_booked</code> AJAX used everywhere else in the suite). Seat availability is checked <i>per staff + date + time</i>, not just per date — two different staff members' concurrent bookings on a shared seat plan don't collide with each other's holds.</li>
+        <li>Widget submits via <code>Ajax\Booking_Handler.php</code> — <b>not</b> the Engine's generic <code>Submission_Handler</code>. This is a deliberately separate, bespoke pipeline.</li>
+        <li><code>Booking_Service::create()</code> re-checks capacity (<code>capacity_mode</code>: <i>Per Staff</i> gives each staff member independent capacity per slot; <i>Shared Pool</i> draws all staff from one shared <code>capacity_value</code>) — using the seat plan's real seat count as the ceiling when one is connected, exactly like Events.</li>
+        <li><b>Three-way credit decision</b> (identical rule to Events' <code>Field_Event::decide_payment()</code>): (a) credit-enabled + sufficient balance on the customer's selected plan → confirm instantly, deduct credits, no WooCommerce involved at all; (b) credit-enabled but insufficient balance → falls through to WooCommerce checkout for cash payment; (c) credit-enabled but no membership plan available to the customer → a clear error, not a silent fallback.</li>
+        <li>Booking row inserted into <code>credoq_bookings</code>. Seats — if any were selected — are held via the interactive click-to-hold flow already, and get upgraded to <code>confirmed</code> at this point via <code>Appointments_Bridge::on_confirm()</code>, using each seat's own individually recomputed price (never an average).</li>
+        <li>Paid path: WC cart item added, order created as <code>pending_payment</code>; <code>WooCommerce::on_complete()</code>/<code>on_cancel()</code> mirror the confirmed/cancelled transitions and correctly restore/release seats and pricing on refund or failure.</li>
+      </ol>
+
+      <h3>Slot &amp; capacity mechanics — how seat availability intersects with scheduling</h3>
+      <div class="grid2">
+        <div class="card">
+          <b style="color:#dbe4ff;">Per Staff capacity mode</b>
+          <p style="color:var(--muted);font-size:13px;">Each staff member's own slots are capacity-limited independently. If a seat plan is connected, <i>each staff member's</i> occurrence of that slot (same plan, same date, same time, different staff) is tracked as a distinct seat-booking scope — booking seat #4 for Dr. Smith's 2pm slot does not consume seat #4 for Dr. Lee's 2pm slot on the same date, even though both draw from the same physical seat plan.</p>
+        </div>
+        <div class="card">
+          <b style="color:#dbe4ff;">Shared Pool capacity mode</b>
+          <p style="color:var(--muted);font-size:13px;">All staff assigned to a slot draw from one shared capacity number for that date/time — matches a single-room/single-resource scenario (e.g. one consultation room, multiple practitioners rotating through it). The seat plan's physical seat count, when connected, is the real ceiling regardless of how many staff are nominally assigned.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="engine-core">
+      <h2>Credoq Engine — Core Lifecycle</h2>
+      <p class="lead">The foundation every addon builds on. Nothing below is addon-specific — this is what every submission, of any type, passes through.</p>
+
+      <h3>Field-type registry</h3>
+      <p style="color:var(--muted);font-size:13.5px;">Addons register their field types (e.g. <code>seat_map</code>, <code>event_registration</code>, <code>membership_credit</code>) via the <code>credoq_engine_ready</code> hook into the Engine's <code>Fields\Registry</code>. Each field type is a class extending <code>Abstracts\Field_Type</code>, implementing <code>sanitize()</code>, <code>validate()</code>, <code>price_contribution()</code>, <code>wc_contribution()</code>, <code>credit_cost()</code>, and <code>on_submission()</code>. <code>Registry::builder_descriptors()</code> exposes each type's palette icon/label to the Forms Builder — this is metadata for building the drag-and-drop field list, not the settings-panel rendering (that's separately wired per field type, see the Settings Matrix's Forms Builder panel note).</p>
+
+      <h3>React widget initialization</h3>
+      <p style="color:var(--muted);font-size:13.5px;"><code>main.jsx</code> mounts <code>BookingWidget.jsx</code> into each <code>[credoq_booking_form]</code>/<code>[credoq_form]</code> shortcode instance on the page. On mount, it fetches the form's config (fields, pricing rules, addon-injected extras like <code>event_seat_plans</code> via the <code>credoq_widget_config</code> filter) and renders the field list through <code>FormField.jsx</code>'s per-type switch, falling through to a generic addon renderer driven by each field type's <code>_frontend</code> descriptor for anything without a hardcoded case.</p>
+
+      <h3>AJAX submit pipeline</h3>
+      <p style="color:var(--muted);font-size:13.5px;">Two distinct paths exist, and they are <b>not interchangeable</b>:</p>
+      <ul class="guide">
+        <li><b>Admin-ajax (standalone/non-appointment forms):</b> <code>useAjax.js</code>'s <code>submitBooking(formData, false)</code> posts real multipart <code>FormData</code> to <code>admin-ajax.php?action=credoq_submit_booking</code>, handled by <code>Ajax\Booking.php</code>. PHP parses bracket-notation nested fields (e.g. <code>seat_map[seats][]</code>) natively — no client-side reconstruction needed. <code>recursive_sanitize()</code> handles arbitrary nesting correctly.</li>
+        <li><b>REST (appointment-flow forms):</b> <code>submitBooking(formData, true)</code> posts JSON to the REST <code>/bookings</code> endpoint instead. This path needed its own bracket-path parser fix (a historical bug where nested object values got mangled into flat garbage keys) — already fixed and verified not to affect the admin-ajax path, which never had the bug in the first place.</li>
+      </ul>
+
+      <h3><code>Submission_Handler</code> transaction safety</h3>
+      <p style="color:var(--muted);font-size:13.5px;">Runs the whole submission inside one DB transaction: sanitize every field → compute <code>total_price</code>/<code>total_credits</code>/<code>wc_items</code> by summing each field's <code>price_contribution()</code>/<code>credit_cost()</code>/<code>wc_contribution()</code> → insert the submission row → fire each field's <code>on_submission()</code> in form order. If <b>any</b> field's <code>on_submission()</code> returns a <code>WP_Error</code> (e.g. an ambiguous seat-map event resolution), the whole transaction rolls back — nothing partially commits. Only after a successful commit does <code>credoq_after_submission</code> fire.</p>
+
+      <h3>SMTP routing &amp; notifications</h3>
+      <p style="color:var(--muted);font-size:13.5px;">Outgoing mail routes through either WordPress's default <code>wp_mail()</code> or a configured SMTP host (Settings → SMTP), independent of which addon triggered the email. <code>Mail\Submission_Notifier</code> hooks the generic <code>credoq_after_submission</code> action, so <b>every</b> submission — regardless of which addon's fields it contains — gets a bell notification and (if <code>notify_on_submission</code> is on) an admin email with zero addon-specific wiring required. This is why Events registrations get notified automatically while Appointments (which bypasses this generic pipeline entirely) needed its own dedicated notify hook.</p>
+    </section>
+
+    <section id="membership-core">
+      <h2>Credoq Membership — Complete Lifecycle</h2>
+
+      <h3>Plan creation &amp; restriction rules</h3>
+      <p style="color:var(--muted);font-size:13.5px;">Admin creates a plan (Membership → Plans) with a <code>slot_credit</code> allowance, optional <code>allowed_form_ids</code> scope, <code>purchase_limit_expiry</code> (blocks repurchase while a membership is still active), and optional <code>qr_scan_enabled</code>. Content restriction is configured per plan: <code>restricted_pages[]</code>, <code>restricted_products[]</code>, and <code>restricted_urls</code> gate access — non-members are blocked per the plan's <code>restriction_html</code> message or redirected via <code>unlock_url</code>. <code>hide_css_selectors</code> offers a softer alternative: hide specific page elements from non-members rather than blocking the whole page.</p>
+
+      <h3>Credit ledger mechanics</h3>
+      <p style="color:var(--muted);font-size:13.5px;"><code>Membership_Service</code> is the single source of truth for every credit-consuming addon:</p>
+      <ul class="guide">
+        <li><code>get_balance($user_id, $plan_id = 0, $form_id = 0)</code> — the core read. <code>$plan_id = 0</code> pools the balance across every active plan the user holds; a non-zero <code>$plan_id</code> scopes to just that plan. <code>$form_id</code>, when set, checks that plan's <code>allowed_form_ids</code> restriction.</li>
+        <li><code>get_plan_status($user_id, $plan_id, $form_id = 0)</code> — a convenience wrapper returning <code>{remaining, plan_id, user_id}</code>, used by every addon's pre-flight sufficiency check.</li>
+        <li><code>deduct_credit()</code> / <code>refund_credit()</code> — write ledger entries (type <code>use</code>/<code>refund</code>) against a specific plan. Every addon's cancellation path calls <code>refund_credit()</code> to reverse a prior deduction.</li>
+        <li><code>grant_membership($user_id, $plan_id, $order_id, $wc_status)</code> — called on a successful plan-purchase WC order, sets the purchase/expiry dates and inserts the <code>credoq_user_memberships</code> row.</li>
+      </ul>
+      <p style="color:var(--muted);font-size:13.5px;">Every credit-consuming addon (Events, Appointments) follows the same three-way pattern against this ledger: check <code>get_plan_status()</code> before committing to the credit path, deduct on confirmation, refund on cancellation — see the Appointments + Seats and Events lifecycles above for the exact decision tree.</p>
+
+      <h3>QR check-in</h3>
+      <p style="color:var(--muted);font-size:13.5px;"><code>qr_scan_enabled</code> on a plan is the data flag a dedicated QR Check-in addon would consume to generate and scan member badges at an event/venue door. <b>As of this documentation, that addon is planned but not yet built</b> — the flag exists on the Plans schema, but there is currently no scanning UI or verification endpoint shipping in the suite. Treat any "QR check-in" business use case below as a near-term roadmap item, not a shipping feature.</p>
+    </section>
+
+    <section id="ecosystem">
+      <h2>Unified 5-Plugin Ecosystem</h2>
+      <p class="lead">How all five plugins coexist on one site without hard dependencies on each other.</p>
+
+      <div class="grid2">
+        <div class="card">
+          <b style="color:#dbe4ff;">The rule: soft dependencies only</b>
+          <p style="color:var(--muted);font-size:13px;">Every addon checks <code>class_exists('\CredoqX\...')</code> before calling into another plugin's code, and every cross-plugin integration point is a WordPress filter or action (<code>credoq_widget_config</code>, <code>credoq_events_seat_overrides</code>, <code>credoq_event_booking_confirmed</code>/<code>_cancelled</code>, <code>credoq_after_submission</code>). Deactivating Seats, Membership, or any single addon degrades that one integration gracefully — the rest of the suite keeps working. Only Engine is a hard dependency, for all four addons.</p>
+        </div>
+        <div class="card">
+          <b style="color:#dbe4ff;">Bridges — one per integration pair</b>
+          <p style="color:var(--muted);font-size:13px;">Cross-cutting logic lives in small dedicated bridge classes owned by the "consuming" side of the integration, not scattered across both plugins: <code>Seats\Integrations\Events_Bridge</code>, <code>Seats\Integrations\Appointments_Bridge</code>. This keeps Events and Appointments free of any Seats-specific code beyond a handful of <code>class_exists()</code>-guarded calls and filter invocations.</p>
+        </div>
+      </div>
+
+      <h3>Spending a membership credit on a seat-mapped Event or Appointment — the unified flow</h3>
+      <p style="color:var(--muted);font-size:13.5px;">This is the single flow that exercises all relevant parts of the ecosystem at once (minus Membership's own plan-purchase flow, which happens earlier/separately):</p>
+      <ol style="color:var(--muted);font-size:13.5px;padding-left:22px;">
+        <li>Visitor is logged in with an active membership plan carrying spare credit (granted earlier via a WC purchase → <code>Membership_Service::grant_membership()</code>).</li>
+        <li>They open a registration form (Events) or booking widget (Appointments) for a credit-enabled, seat-mapped event/service. <b>Engine</b> renders the form; <b>Seats</b> injects the plan/event resolution config; the visitor picks their seat(s).</li>
+        <li>On submit, the real per-seat total is recomputed (never trusted from the client) — this is the number credits get measured against, not a flat qty × price.</li>
+        <li><b>Membership's</b> three-way decision runs: sufficient credit on the visitor's plan → instant confirm, no WooCommerce redirect, <code>deduct_credit()</code> fires for exactly the seat-based amount; insufficient → WooCommerce checkout for the real seat total instead; no credit-capable plan at all → a clear error naming the problem, never a silent fallback to a wrong price.</li>
+        <li>Seats confirm in <b>Seats'</b> own table immediately (the reservation act, independent of payment timing) via the same <code>confirm_seats()</code>/per-seat price_map logic used everywhere else in the suite.</li>
+        <li>If the visitor later cancels: <b>Membership</b> refunds the credit, <b>Seats</b> releases the seat, and (for Events) the booking status updates — three independent, idempotent operations, each triggered off the same cancellation event, none of them assuming the others already ran.</li>
+      </ol>
+    </section>
+
+    <section id="usecases">
+      <h2>Business Use Cases &amp; Solution Mapping</h2>
+
+      <div class="card">
+        <h3 style="margin-top:0;">1. Theaters &amp; Venues — ticketed seat reservation</h3>
+        <p style="color:var(--muted);font-size:13.5px;"><b>Plugins:</b> Engine + Events + Seats + WooCommerce.</p>
+        <p style="color:var(--muted);font-size:13.5px;"><b>Setup:</b> Build the venue's seating chart in Seats → Plan Builder (floors, seat types, per-type and per-seat pricing overrides). Create the show/event in Events with a WC product for ticket sales. Connect the plan to the event (Connect to a service). Build a registration form in the Forms Builder with an <code>event_registration</code> field and a <code>seat_map</code> field — auto-resolution handles the rest, or pin both explicitly via the seat_map field's settings panel if this plan ever serves more than one showing.</p>
+        <p style="color:var(--muted);font-size:13.5px;"><b>Result:</b> Buyers pick exact seats, pay the real per-seat price (VIP/standard/override-aware) through WooCommerce, and the seat map reflects live availability across every simultaneous buyer.</p>
+      </div>
+
+      <div class="card">
+        <h3 style="margin-top:0;">2. Medical / Salon / Consultations — staff-allocated slot booking</h3>
+        <p style="color:var(--muted);font-size:13.5px;"><b>Plugins:</b> Engine + Appointments (+ Seats, optional, for a waiting-room-style seat/chair assignment).</p>
+        <p style="color:var(--muted);font-size:13.5px;"><b>Setup:</b> Add staff (practitioners/stylists) with their weekly hours and any blackout special dates. Create services with duration and price; set <code>capacity_mode</code> to <i>Per Staff</i> for independent practitioner schedules. Enable <code>show_staff_selector</code> so clients pick their preferred provider, or leave it off for auto-assignment.</p>
+        <p style="color:var(--muted);font-size:13.5px;"><b>Result:</b> Clients book a specific provider's open slot; <code>Slot_Generator</code>'s layered availability (special dates → weekly hours → service fallback) keeps the calendar accurate without manual slot management.</p>
+      </div>
+
+      <div class="card">
+        <h3 style="margin-top:0;">3. Fitness Clubs &amp; Co-Working Spaces — gated access, credit-based booking</h3>
+        <p style="color:var(--muted);font-size:13.5px;"><b>Plugins:</b> Engine + Membership + Appointments and/or Events.</p>
+        <p style="color:var(--muted);font-size:13.5px;"><b>Setup:</b> Create membership tiers in Membership (e.g. "10 classes/month") with <code>slot_credit</code> set accordingly. Enable <code>credit_deduct_enabled</code> on each class/session service or event, with <code>credit_deduct_amount</code> set to how many credits one booking costs. Optionally restrict the booking page itself to active members via <code>restricted_pages[]</code>.</p>
+        <p style="color:var(--muted);font-size:13.5px;"><b>Result:</b> Members book classes against their monthly credit allowance with zero payment friction (case (a) of the three-way decision); non-members or members who've used their allowance are seamlessly offered pay-per-class checkout instead (case (b)) rather than being blocked outright.</p>
+      </div>
+
+      <div class="card">
+        <h3 style="margin-top:0;">4. Hybrid Enterprises — all 5 plugins simultaneously</h3>
+        <p style="color:var(--muted);font-size:13.5px;"><b>Plugins:</b> All five, concurrently, for different lines of business on one site.</p>
+        <p style="color:var(--muted);font-size:13.5px;"><b>Example:</b> A performing-arts venue that also runs recurring workshops and a members' program. Events + Seats handles ticketed main-stage shows; Appointments (with its own optional seat integration) handles small-group workshop bookings with instructor assignment; Membership provides a "Friends of the Venue" tier granting discounted/credit-based access to both. Because every cross-plugin touchpoint is filter/hook-based rather than hard-wired, none of these three business lines interfere with each other's data or logic — they share only the Engine's form builder and submission plumbing.</p>
+      </div>
+    </section>
+
+    <section id="journeys">
+      <h2>Admin &amp; Frontend Journeys</h2>
+
+      <h3>Admin setup journey (typical order, any subset of plugins)</h3>
+      <ol style="color:var(--muted);font-size:13.5px;padding-left:22px;">
+        <li>Install &amp; activate Engine first, then whichever addons the business needs.</li>
+        <li>Engine → Settings: set currency/date/time formats, SMTP, and security options (reCAPTCHA, IP/country blocking) once — shared by every addon.</li>
+        <li>Per addon: create the underlying entities — Staff + Services (Appointments), Events (Events), Seat Plans (Seats), Membership Plans (Membership).</li>
+        <li>If using Seats: connect plans to the events/services that need them (Plan Builder → Connect to a service) — do this <i>before</i> building forms that reference them, so auto-resolution and the settings-panel dropdowns have something to find.</li>
+        <li>Build the registration/booking form in the Forms Builder, add the relevant fields, and place the shortcode on a page.</li>
+        <li>Test the full frontend flow once as a guest and once as a logged-in user before going live — the two paths differ (see below).</li>
+      </ol>
+
+      <h3>Frontend user journeys</h3>
+      <div class="grid2">
+        <div class="card"><b style="color:#dbe4ff;">Guest checkout</b><p style="color:var(--muted);font-size:13px;">No account required unless <code>require_login</code> is on. Name/email collected inline on the form. Credit-based payment is unavailable (credits are tied to a logged-in user's account) — guests always see the WooCommerce/cash path for priced bookings.</p></div>
+        <div class="card"><b style="color:#dbe4ff;">Logged-in, no membership credit</b><p style="color:var(--muted);font-size:13px;">Identical to guest checkout for payment purposes, but the account's booking history is retained and tied to their user ID.</p></div>
+        <div class="card"><b style="color:#dbe4ff;">Logged-in, spending membership credit</b><p style="color:var(--muted);font-size:13px;">See the unified credit-spend flow above — instant confirm with no WooCommerce redirect when sufficient credit exists, transparent fallback to payment when it doesn't.</p></div>
+        <div class="card"><b style="color:#dbe4ff;">Seat selection (any of the three above)</b><p style="color:var(--muted);font-size:13px;">Click seats on the live map → 5-minute hold per seat → submit locks in the real seat-based price and count, overriding any quantity stepper elsewhere on the form.</p></div>
+      </div>
+    </section>
+
+    <section id="settings">
+      <h2>Settings Matrix</h2>
+      <p class="lead">Every admin-facing setting across all five plugins, and exactly what changes when it's enabled vs. disabled.</p>
+      <div class="toolbar">
+        <input type="text" id="search" placeholder="Filter by name, effect, or file…">
+        <button class="active" data-f="all">All</button>
+        <button data-f="engine">Engine</button>
+        <button data-f="appointments">Appointments</button>
+        <button data-f="events">Events</button>
+        <button data-f="seats">Seats</button>
+        <button data-f="membership">Membership</button>
+      </div>
+      <table class="matrix">
+        <thead><tr><th style="width:90px;">Plugin</th><th>Setting</th><th>Enabled / Set to A</th><th>Disabled / Set to B</th></tr></thead>
+        <tbody id="matrix-body"></tbody>
+      </table>
+    </section>
+
+    <section id="testsuite">
+      <h2>Automated Test Suite</h2>
+      <p class="lead">Shipped separately as <code>credoq-test-suite.zip</code> — a standalone, portable harness. No WordPress install or database required; pure PHP CLI.</p>
+
+      <h3>Test architecture</h3>
+      <p style="color:var(--muted);font-size:13.5px;">Not PHPUnit — a lighter, purpose-built harness (<code>tests/wp_stubs.php</code>) providing a fake <code>$wpdb</code> and the minimal set of WordPress functions (<code>apply_filters</code>, <code>sanitize_*</code>, nonce/user stubs) these specific cross-plugin scenarios need. This was a deliberate choice: the bugs this suite exists to catch — missing methods, wrong hook arguments, averaged-instead-of-per-item prices, cross-entity ID collisions — only surface by actually executing the real plugin code path end to end, not from isolated unit assertions against mocked interfaces. Each <code>tests/testN_*.php</code> file requires <code>bootstrap.php</code> (defines a configurable <code>PLUGINS_DIR</code>) and the real plugin source files it needs, then runs a self-contained scenario and prints PASS/FAIL per assertion.</p>
+
+      <h3>Assertion coverage — 81 assertions across 11 files</h3>
+      <table class="matrix">
+        <thead><tr><th>File</th><th>Assertions</th><th>Covers</th></tr></thead>
+        <tbody>
+          <tr><td class="setting-name">test1_resolve_event_id.php</td><td>5</td><td class="eff">Seat map → event resolution from a submission payload, including ambiguous multi-event rejection.</td></tr>
+          <tr><td class="setting-name">test2_event_scoping.php</td><td>10</td><td class="eff">Seat holds/releases/bookings stay correctly isolated when one plan serves multiple events on the same date.</td></tr>
+          <tr><td class="setting-name">test3_full_integration.php</td><td>18</td><td class="eff">Full price-replacement flow: seat plan total overrides flat event price across WC cart, credit deduction, and the stored booking row.</td></tr>
+          <tr><td class="setting-name">test4_capacity_and_ambiguity.php</td><td>8</td><td class="eff">Seat-plan-aware capacity ceiling scenarios; ambiguous multi-event seat_map submissions correctly rejected, not guessed.</td></tr>
+          <tr><td class="setting-name">test5_wc_cancel_hook.php</td><td>3</td><td class="eff">WooCommerce cancel/refund/fail correctly releases seats — plus a regression proof reproducing the original broken hook-argument bug for contrast.</td></tr>
+          <tr><td class="setting-name">test6_membership_static_methods.php</td><td>7</td><td class="eff">Membership_Service's credit ledger methods (balance read, deduct, refund) — the methods that were previously missing entirely.</td></tr>
+          <tr><td class="setting-name">test7_appointments_bridge_pricemap.php</td><td>3</td><td class="eff">Per-seat pricing (not an averaged flat rate) applied to Appointments bookings.</td></tr>
+          <tr><td class="setting-name">test8_legacy_event_register.php</td><td>4</td><td class="eff">Legacy standalone Events registration: seat-plan-aware capacity ceiling, correct credit-check argument.</td></tr>
+          <tr><td class="setting-name">test9_explicit_overrides.php</td><td>4</td><td class="eff">Explicit event_id/seat_plan_id overrides from the Forms Builder settings panel take priority over auto-detection.</td></tr>
+          <tr><td class="setting-name">test10_legacy_seat_registration.php</td><td>11</td><td class="eff">Legacy flow's real seat-map integration: real per-seat pricing, cancellation release, invalid-seat rejection.</td></tr>
+          <tr><td class="setting-name">test11_legacy_seat_wc_and_capacity.php</td><td>8</td><td class="eff">WC cart receives the real seat count (not a spoofed quantity), pre-payment seat reservation, capacity ceiling at the exact boundary.</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Execution guide</h3>
+      <div class="card">
+        <p style="color:var(--muted);font-size:13.5px;margin-top:0;"><b style="color:#dbe4ff;">Local:</b></p>
+        <pre style="background:#0e1420;border:1px solid var(--line);border-radius:8px;padding:12px 14px;font-family:var(--mono);font-size:12.5px;overflow-x:auto;color:#dbe4ff;">unzip credoq-test-suite.zip
+export CREDOQ_PLUGINS_DIR=/path/to/plugin-checkouts
+cd citest && ./run-all.sh</pre>
+        <p style="color:var(--muted);font-size:13.5px;">Plugin checkouts must sit side by side using their real folder names (<code>credoq-engine-v3</code>, <code>credoq-appointments</code>, <code>credoq-events-v3</code>, <code>credoq-seats</code>, <code>credoq-membership-v3</code>) inside that directory — or drop them in a <code>plugins/</code> folder next to <code>run-all.sh</code> and skip the environment variable. Requires PHP 8.1+ CLI (the harness itself; the plugins under test remain PHP 7.4-compatible). <code>run-all.sh</code> exits non-zero if any test file fails, so it's ready to wire into a CI job as-is.</p>
+        <p style="color:var(--muted);font-size:13.5px;margin-top:14px;"><b style="color:#dbe4ff;">CI (GitHub Actions example):</b></p>
+        <pre style="background:#0e1420;border:1px solid var(--line);border-radius:8px;padding:12px 14px;font-family:var(--mono);font-size:12.5px;overflow-x:auto;color:#dbe4ff;">- uses: actions/checkout@v4
+- uses: shivammathur/setup-php@v2
+  with: { php-version: '8.1' }
+- run: |
+    mkdir plugins
+    # checkout/copy each plugin repo into plugins/&lt;real-folder-name&gt;
+    cd credoq-test-suite/citest
+    CREDOQ_PLUGINS_DIR=$PWD/../../plugins ./run-all.sh</pre>
+        <p style="color:var(--muted);font-size:12.5px;color:var(--muted2);margin-top:10px;">Note: this documentation package doesn't include a live GitHub repository or Actions workflow file — the suite is delivered ready to drop into one. If/when repo access is provided, the workflow above is copy-paste-ready.</p>
+      </div>
+
+      <h3>Adding a new test</h3>
+      <p style="color:var(--muted);font-size:13.5px;">Copy the shape of any existing <code>testN_*.php</code>: require <code>bootstrap.php</code> first, then <code>wp_stubs.php</code>, then only the specific plugin source files the scenario needs. These are intentionally narrow, fast, execution-based tests — not a full WordPress bootstrap — so keep new tests scoped to one real bug or behavior per file.</p>
+    </section>
+
+
+    <section id="audit">
+      <h2>Audit Summary</h2>
+      <p class="lead">Full detail with exact file/function references lives in <code>AUDIT.md</code>. Headlines below.</p>
+      <div class="bug"><h4>Membership credit ledger missing 3 methods every credit booking calls <span class="pill p0" style="margin-left:6px;">Fixed</span></h4><div class="file">credoq-membership/includes/Membership_Service.php</div><code>get_plan_status()</code>, <code>deduct_credit()</code>, <code>refund_credit()</code> were called statically from Appointments + Events but never existed — a guaranteed fatal error on every real credit-enabled booking attempt.</div>
+      <div class="bug"><h4>Seat price replacement never reached WooCommerce/credits <span class="pill p0" style="margin-left:6px;">Fixed</span></h4><div class="file">credoq-events/includes/Fields/Field_Event.php</div>Flat <code>event.price × qty</code> was charged/deducted regardless of the seat map's real total — the two numbers could permanently disagree.</div>
+      <div class="bug"><h4>Cross-event seat collision on shared plans <span class="pill p0" style="margin-left:6px;">Fixed</span></h4><div class="file">credoq-seats/includes/Repositories/Booking_Repository.php</div>No <code>event_id</code> scoping — two events sharing a plan on the same date saw each other's seats as taken.</div>
+      <div class="bug"><h4>WC cancel/refund/fail never released seats <span class="pill p0" style="margin-left:6px;">Fixed</span></h4><div class="file">credoq-events/includes/Integrations/WooCommerce.php</div>Wrong ID type passed to the release hook; only "cancelled" was even registered.</div>
+      <div class="bug"><h4><code>confirm_seats()</code> averaged prices instead of per-seat <span class="pill p0" style="margin-left:6px;">Fixed</span></h4><div class="file">credoq-seats/includes/Repositories/Booking_Repository.php</div>Mixed-price selections got the wrong number in every seat's <code>price_charged</code> — same fix applied to both Events and Appointments bridges.</div>
+      <div class="bug p1"><h4>Qty stepper stayed interactive when a seat map governed the event <span class="pill p1" style="margin-left:6px;">Fixed</span></h4><div class="file">credoq-engine/react-widget/src/EventCalendarField.jsx</div>Now locked to the real seat count with an explanatory tooltip whenever a seat_map field resolves to that event.</div>
+      <div class="bug p1"><h4>No Forms Builder settings UI for addon fields <span class="pill p1" style="margin-left:6px;">Flagged</span></h4><div class="file">credoq-engine/includes/Admin/Forms_Page.php</div>Worked around via auto-inheritance; a real settings panel is a separate, larger task.</div>
+      <div class="bug"><h4>Final CodeCanyon QA pass: PHP 7.4 compat break, uninstall data-loss risk, internal docs shipping in the package <span class="pill p0" style="margin-left:6px;">Fixed</span></h4><div class="file">Multiple — see AUDIT.md §0b</div>A PHP 8.0-only function call broke the declared PHP 7.4 minimum; <code>credoq-seats</code>' uninstall.php dropped all tables unconditionally (no opt-in gate, unlike every other addon); internal dev-process markdown files were sitting in the plugin root and would have shipped to customers. All fixed; security fundamentals (nonces, capability checks, SQL injection surface) reviewed with no issues found.</div>
+    </section>
+
+    <section id="checklist">
+      <h2>Prioritized Action Checklist</h2>
+      <div class="grid2">
+        <div class="card">
+          <span class="pill p0">P0 — Critical</span>
+          <ul class="guide" style="margin-top:10px;">
+            <li>None outstanding — the newly-discovered <code>Membership_Service</code> fatal-error bug (missing <code>get_plan_status()</code>/<code>deduct_credit()</code>/<code>refund_credit()</code>) is fixed &amp; harness-verified, alongside all money/data-integrity bugs from the original session.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="pill p1">P1 — High</span>
+          <ul class="guide" style="margin-top:10px;">
+            <li>None outstanding — the legacy Events registration flow now has real seat-map integration (reuses the same seat-map AJAX/JS the React widget uses). <b>Done.</b></li>
+            <li>Consider syncing the event calendar's local qty display with the seat map's live seat count in the on-screen running total (currently a cosmetic-only gap — server pricing is already correct).</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="pill p2">P2 — Medium</span>
+          <ul class="guide" style="margin-top:10px;">
+            <li>Extend the same explicit-override settings panel pattern (now built for <code>seat_map</code>) to <code>Field_Event</code>'s own event_registration field, if a similar override is ever needed there.</li>
+            <li>Add an automated CI test suite based on this session's harness pattern so regressions surface before manual QA. <b>Done</b> — see <code>credoq-test-suite.zip</code>.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="pill p2">P2 — Nice to have</span>
+          <ul class="guide" style="margin-top:10px;">
+            <li>Surface ambiguous seat-plan connections (plan linked to &gt;1 event) as an admin warning at save time. <b>Done</b> — Plan Builder now warns immediately on save.</li>
+            <li>Add audit-log breadcrumbs to more decision points (pattern already started with <code>seats.event_confirm</code>).</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section id="uiux">
+      <h2>UI/UX Guidelines</h2>
+      <ul class="guide">
+        <li><b>Never let a customer-facing number silently disagree with what's charged.</b> Any field that contributes to a live total must recompute server-side before payment — the frontend total is a preview, not a source of truth.</li>
+        <li><b>Fail loud, not silent, on ambiguity.</b> When a seat map can't determine which event/service it belongs to, reject the submission with a clear message rather than guessing — a wrong guess here means a real customer's money goes to the wrong seat.</li>
+        <li><b>Toggle labels state the effect, not the mechanism.</b> "Guests must be logged in to book" rather than "require_login = true" — every setting in the matrix above should read the same way in the admin UI.</li>
+        <li><b>Destructive bulk actions get their own opt-in checkbox.</b> See Seats' "Also overwrite every existing seat's individual price override" — bulk pricing changes never touch manual overrides unless explicitly asked.</li>
+        <li><b>Only Published entities are selectable downstream.</b> Draft seat plans, draft events, and draft services should never appear in another plugin's picker — consistent across Appointments and Events.</li>
+        <li><b>Same action, same word, every time.</b> A booking that's "Confirmed" in the database should never be labelled "Approved" or "Active" in a different admin screen.</li>
+      </ul>
+    </section>
+  </main>
+</div>
+
+<footer>Credoq Suite internal documentation — generated from direct codebase analysis and execution-verified fixes.</footer>
+
+<script>
+(function(){
+  // ---------- Nav active-state on scroll ----------
+  const links = [...document.querySelectorAll('nav.side a.navlink')];
+  const secs = links.map(a => document.querySelector(a.getAttribute('href')));
+  function onScroll(){
+    let idx = 0;
+    secs.forEach((s,i) => { if(s && s.getBoundingClientRect().top - 80 <= 0) idx = i; });
+    links.forEach((a,i)=>a.classList.toggle('active', i===idx));
+  }
+  document.addEventListener('scroll', onScroll, {passive:true});
+  onScroll();
+
+  // ---------- Architecture diagram interactivity ----------
+  const nodes = [...document.querySelectorAll('.node')];
+  const edges = [...document.querySelectorAll('.flow-edge')];
+  const caption = document.getElementById('flow-caption');
+  const captions = {
+    'widget-submit':'React Widget → Ajax\\Booking.php (form submitted)',
+    'submit-handler':'Ajax\\Booking → Submission_Handler::process()',
+    'handler-fieldevent':'Submission_Handler fires Field_Event::on_submission()',
+    'handler-fieldapt':'Submission_Handler fires Field_Appointment::on_submission()',
+    'handler-seatmap':'Submission_Handler fires Seat_Map_Field::on_submission()',
+    'fieldevent-eventsbridge':'Field_Event asks credoq_events_seat_overrides (Events_Bridge)',
+    'seatmap-bookingrepo':'Seat_Map_Field → Booking_Repository::confirm_seats()',
+    'eventsbridge-seatmap':'Events_Bridge resolves event_id via Seat_Map_Field helpers',
+    'fieldevent-eventbookings':'Field_Event writes wp_credoq_event_bookings',
+    'seatmap-seatbookings':'Booking_Repository writes wp_credoq_seat_bookings',
+    'submissions-db':'Submission_Handler writes wp_credoq_submissions',
+    'fieldevent-wc':'Field_Event adds a WooCommerce cart item (if priced + wc_product_id)',
+    'wc-eventsbridge':'WooCommerce order event fires credoq_event_booking_confirmed/cancelled',
+    'fieldevent-credit':'Field_Event checks/deducts Membership credit ledger',
+    'notifier':'credoq_after_submission → Submission_Notifier (bell + email)'
+  };
+  nodes.forEach(n=>{
+    n.addEventListener('mouseenter', ()=>{
+      const flows = n.dataset.flow.split(',');
+      edges.forEach(e=>{
+        const on = flows.includes(e.dataset.e);
+        e.classList.toggle('hl', on);
+        e.classList.toggle('dim', !on);
+      });
+      nodes.forEach(o=>o.classList.toggle('dim', o!==n && !flows.some(f=>o.dataset.flow.includes(f))));
+      caption.textContent = flows.map(f=>captions[f]).filter(Boolean).join('  →  ');
+    });
+    n.addEventListener('mouseleave', ()=>{
+      edges.forEach(e=>{e.classList.remove('hl');e.classList.remove('dim');});
+      nodes.forEach(o=>o.classList.remove('dim'));
+      caption.textContent = 'Hover or tap a node to trace its data flow.';
+    });
+  });
+
+  // ---------- Settings matrix data + render ----------
+  const DATA = [
+    // ENGINE
+    {p:'engine',name:'debug_mode',file:'Admin/Settings_Page.php',on:'Verbose diagnostic entries are written for AJAX/submission activity — useful while troubleshooting.',off:'Silent. No debug entries written. (Default, recommended in production.)'},
+    {p:'engine',name:'ip_block_enabled',file:'Admin/Settings_Page.php',on:'Submissions from any IP on the blocklist are rejected before field validation runs.',off:'No IP-based blocking — any IP may submit.'},
+    {p:'engine',name:'country_block_enabled',file:'Admin/Settings_Page.php',on:'Submissions from blocklisted countries (geo-IP lookup) are rejected.',off:'No country-based blocking.'},
+    {p:'engine',name:'recaptcha_enabled',file:'Admin/Settings_Page.php',on:'Every public form requires a passed reCAPTCHA challenge before it\'s accepted.',off:'Forms accept submissions with no bot protection.'},
+    {p:'engine',name:'recaptcha_version',file:'Admin/Settings_Page.php',on:'v3: invisible, score-based — blocks low scores with no visible widget.',off:'v2: visible "I\'m not a robot" checkbox widget.'},
+    {p:'engine',name:'mode (SMTP)',file:'Admin/Smtp_Page.php',on:'SMTP: outgoing mail routes through the configured host/credentials — reliable delivery.',off:'WP default: uses the server\'s built-in mail function, which many hosts silently drop.'},
+    {p:'engine',name:'notify_on_submission',file:'Admin/Smtp_Page.php',on:'An admin notification email fires for every new form submission.',off:'No admin email is sent for new submissions.'},
+    {p:'engine',name:'confirm_customer',file:'Admin/Smtp_Page.php',on:'The customer/guest also receives a confirmation email of their own submission.',off:'Only the admin is emailed; the customer gets nothing.'},
+    {p:'engine',name:'email_admin_bcc',file:'Admin/Smtp_Page.php (shared pattern)',on:'Site admin is BCC\'d on every customer-facing email.',off:'Admin receives no copy of customer emails.'},
+    // APPOINTMENTS
+    {p:'appointments',name:'booking_mode',file:'Admin/Booking_Settings_Page.php',on:'Auto-confirm: bookings become "confirmed" instantly on submission/payment.',off:'Manual approval: bookings land as "pending" until an admin approves them.'},
+    {p:'appointments',name:'require_login',file:'Admin/Booking_Settings_Page.php',on:'Only logged-in WP users can complete a booking.',off:'Guest checkout is allowed.'},
+    {p:'appointments',name:'enable_waiting_list',file:'Admin/Booking_Settings_Page.php',on:'A fully-booked slot shows "join waiting list" instead of just being unavailable.',off:'Fully booked slots are simply not selectable.'},
+    {p:'appointments',name:'show_staff_selector',file:'Admin/Booking_Settings_Page.php',on:'Widget shows a staff-member picker to the customer.',off:'Staff is auto-assigned and hidden from the customer.'},
+    {p:'appointments',name:'show_notes_field',file:'Admin/Booking_Settings_Page.php',on:'A free-text notes textarea appears on the booking form.',off:'No notes field is shown.'},
+    {p:'appointments',name:'show_price_breakdown',file:'Admin/Booking_Settings_Page.php',on:'Itemized price breakdown (base + seats + addons) is shown in the widget.',off:'Only a single final total is shown.'},
+    {p:'appointments',name:'allow_multi_booking',file:'Admin/Appointments_Page.php (per service)',on:'Customer can book multiple sessions/days in one submission.',off:'One appointment per submission only.'},
+    {p:'appointments',name:'multi_price_mode',file:'Admin/Appointments_Page.php (per service)',on:'Per Session: total = base price × number of sessions.',off:'Fixed Day Rate: flat rate regardless of session count.'},
+    {p:'appointments',name:'credit_deduct_enabled',file:'Admin/Appointments_Page.php (per service)',on:'Booking this service consumes membership credits.',off:'Credits are never touched for this service.'},
+    {p:'appointments',name:'visual_seats_enabled',file:'Admin/Appointments_Page.php (per service)',on:'Replaces the plain quantity control with the Visual Seats map (needs a connected published plan).',off:'Standard quantity-only booking, no seat picker.'},
+    {p:'appointments',name:'capacity_mode',file:'Admin/Appointments_Page.php (per service)',on:'Per Staff: each staff member has independent capacity per slot.',off:'Shared Pool: all staff draw from one shared capacity_value per slot.'},
+    {p:'appointments',name:'price_multiplier',file:'Admin/Staff_Page.php (per staff)',on:'A multiplier (e.g. 1.5×) applied to the base price when this staff member is chosen.',off:'1.0 = no change to price.'},
+    {p:'appointments',name:'avail_{day}_enabled',file:'Admin/Staff_Page.php (per staff)',on:'Staff is bookable that weekday within their set hours.',off:'That day is fully blacked out for this staff member, regardless of hours set.'},
+    // EVENTS
+    {p:'events',name:'status',file:'Admin/Events_Page.php',on:'Published: event is publicly visible and open for registration.',off:'Draft: hidden from the public calendar. Cancelled: visible as cancelled, not bookable.'},
+    {p:'events',name:'capacity',file:'Admin/Events_Page.php',on:'A hard cap on total registered quantity (0 = unlimited from this field alone).',off:'0 = unlimited — but a connected seat plan\'s real seat count still applies as the true ceiling.'},
+    {p:'events',name:'credit_deduct_enabled',file:'Admin/Events_Page.php',on:'Registering for this event consumes membership credits.',off:'Never touches credits — always priced/free per its own price field.'},
+    {p:'events',name:'wc_product_id',file:'Admin/Events_Page.php',on:'>0: registration goes through WooCommerce checkout using that product.',off:'0: event is free or manually confirmed — no WC checkout is ever created.'},
+    // SEATS
+    {p:'seats',name:'connect_type',file:'Admin/Plan_Builder_Page.php',on:'"Event"/"Appointment": this plan governs that service type\'s registrations.',off:'"None": plan exists but isn\'t wired into any live booking flow — safe to edit.'},
+    {p:'seats',name:'connected_event_ids[] / connected_apt_ids[]',file:'Admin/Plan_Builder_Page.php',on:'Checked events/services are linked to this plan (more than one is allowed).',off:'Unchecked entities have no seat map at all on their registration form.'},
+    {p:'seats',name:'capacity_limit',file:'Admin/Plan_Builder_Page.php',on:'An explicit cap smaller than the physical seat count (e.g. sell fewer than exist).',off:'0: use the full physical seat count as the ceiling.'},
+    {p:'seats',name:'status',file:'Admin/Plan_Builder_Page.php',on:'Published: live and selectable by Appointments/Events pickers.',off:'Draft/Archived: invisible to every picker — no live form can find it.'},
+    {p:'seats',name:'apply_to_all_seats',file:'Admin/Plan_Builder_Page.php (pricing bulk action)',on:'Overwrites every existing seat\'s individual price override with the new type prices — destructive.',off:'Only the type-level fallback price is set; existing per-seat overrides are preserved.'},
+    // MEMBERSHIP
+    {p:'membership',name:'slot_credit',file:'Admin/Plans_Page.php',on:'Number of credits granted per plan purchase/renewal.',off:'0: this plan grants no spendable credits.'},
+    {p:'membership',name:'allowed_form_ids',file:'Admin/Plans_Page.php',on:'Credits from this plan can only be spent on the listed form IDs.',off:'Blank: credits are usable on any credit-enabled form.'},
+    {p:'membership',name:'purchase_limit_expiry',file:'Admin/Plans_Page.php',on:'Prevents re-purchase of this plan while an active membership already exists.',off:'Members may repurchase/stack the plan at any time.'},
+    {p:'membership',name:'qr_scan_enabled',file:'Admin/Plans_Page.php',on:'Members of this plan get a scannable QR code for check-in flows.',off:'No QR code is generated for this plan.'},
+    {p:'membership',name:'restricted_pages[] / restricted_products[] / restricted_urls',file:'Admin/Plans_Page.php',on:'Listed content is gated — non-members are blocked per restriction_html/unlock_url.',off:'Unlisted content is fully public regardless of membership status.'},
+  ];
+
+  const PILL = {engine:'Engine',appointments:'Appointments',events:'Events',seats:'Seats',membership:'Membership'};
+  const tbody = document.getElementById('matrix-body');
+  function render(filter, q){
+    tbody.innerHTML = '';
+    DATA.filter(d => (filter==='all'||d.p===filter))
+        .filter(d => !q || (d.name+d.on+d.off+d.file).toLowerCase().includes(q))
+        .forEach(d=>{
+          const tr = document.createElement('tr');
+          tr.innerHTML = `<td><span class="pill ${d.p}">${PILL[d.p]}</span></td>
+            <td><div class="setting-name">${d.name}</div><div style="color:var(--muted2);font-size:11px;margin-top:3px;">${d.file}</div></td>
+            <td class="eff"><b>${d.on}</b></td>
+            <td class="eff"><b class="off">${d.off}</b></td>`;
+          tbody.appendChild(tr);
+        });
+  }
+  let curFilter='all', curQ='';
+  render(curFilter,curQ);
+  document.querySelectorAll('.toolbar button').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('.toolbar button').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      curFilter = btn.dataset.f;
+      render(curFilter,curQ);
+    });
+  });
+  document.getElementById('search').addEventListener('input', (e)=>{
+    curQ = e.target.value.trim().toLowerCase();
+    render(curFilter,curQ);
+  });
+})();
+</script>
+</body>
+</html>

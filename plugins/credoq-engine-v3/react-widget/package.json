@@ -1,0 +1,19 @@
+{
+  "name": "credoq-booking-widget",
+  "version": "1.0.0",
+  "description": "CredoQ React Booking Widget",
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite"
+  },
+  "dependencies": {
+    "@lottiefiles/dotlottie-react": "^0.16.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.2.1",
+    "terser": "^5.47.1",
+    "vite": "^5.1.0"
+  }
+}

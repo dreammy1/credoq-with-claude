@@ -1,0 +1,18 @@
+{
+  "name": "credoq-seats-canvas-builder",
+  "version": "1.0.0",
+  "description": "Credoq Visual Seats Pro - drag-and-drop admin canvas builder",
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.2.1",
+    "terser": "^5.47.1",
+    "vite": "^5.1.0"
+  }
+}

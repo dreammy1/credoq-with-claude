@@ -1,0 +1,1046 @@
+/**
+ * Credoq Engine — Admin Shell CSS
+ *
+ * The Booknetic-style full-screen takeover for Credoq admin pages.
+ * Design language: minimal, modern, premium. Tokenized for theming.
+ *
+ * Architecture:
+ *   - All design tokens are CSS custom properties on :root
+ *   - .credoq-dark overrides those tokens (set on <html> by the
+ *     inline bootstrap script in Admin\Shell)
+ *   - Components reference tokens, never hardcoded values
+ *   - Mobile-first: layout collapses below 1024px
+ *
+ * Inherits/shares tokens with dashboard.css so frontend + admin
+ * look like one product.
+ */
+
+/* ════════════════════════════════════════════════════════════════
+   DESIGN TOKENS (light theme defaults)
+════════════════════════════════════════════════════════════════ */
+:root {
+	/* Brand */
+	--cq-brand: #4f46e5;
+	--cq-brand-hover: #4338ca;
+	--cq-brand-soft: #eef2ff;
+	--cq-brand-contrast: #ffffff;
+
+	/* Neutrals */
+	--cq-bg: #f7f8fb;
+	--cq-bg-elevated: #ffffff;
+	--cq-bg-hover: #f1f5f9;
+	--cq-border: #e5e7eb;
+	--cq-border-strong: #d1d5db;
+
+	/* Text */
+	--cq-text: #0f172a;
+	--cq-text-muted: #64748b;
+	--cq-text-subtle: #94a3b8;
+
+	/* Status */
+	--cq-success: #10b981;
+	--cq-warning: #f59e0b;
+	--cq-danger: #ef4444;
+	--cq-info: #0ea5e9;
+
+	/* Sidebar (independently tokenized so we can do dark sidebar / light content if wanted) */
+	--cq-sidebar-bg: #ffffff;
+	--cq-sidebar-text: #475569;
+	--cq-sidebar-text-active: var(--cq-brand);
+	--cq-sidebar-bg-active: var(--cq-brand-soft);
+	--cq-sidebar-bg-hover: var(--cq-bg-hover);
+	--cq-sidebar-border: var(--cq-border);
+	--cq-sidebar-group-label: #94a3b8;
+
+	/* Header */
+	--cq-header-bg: #ffffff;
+	--cq-header-border: var(--cq-border);
+
+	/* Shadows */
+	--cq-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04);
+	--cq-shadow-md: 0 4px 12px rgba(15, 23, 42, 0.06);
+	--cq-shadow-lg: 0 12px 32px rgba(15, 23, 42, 0.08);
+	--cq-shadow-xl: 0 24px 64px rgba(15, 23, 42, 0.12);
+
+	/* Radii */
+	--cq-radius-sm: 6px;
+	--cq-radius-md: 10px;
+	--cq-radius-lg: 14px;
+	--cq-radius-xl: 20px;
+	--cq-radius-full: 9999px;
+
+	/* Spacing */
+	--cq-space-1: 4px;
+	--cq-space-2: 8px;
+	--cq-space-3: 12px;
+	--cq-space-4: 16px;
+	--cq-space-5: 20px;
+	--cq-space-6: 24px;
+	--cq-space-8: 32px;
+	--cq-space-10: 40px;
+	--cq-space-12: 48px;
+
+	/* Layout */
+	--cq-sidebar-width: 240px;
+	--cq-header-height: 64px;
+	--cq-fab-size: 56px;
+
+	/* Type */
+	--cq-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+	--cq-font-mono: ui-monospace, "SF Mono", Menlo, Monaco, Consolas, monospace;
+
+	/* Transitions */
+	--cq-transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+	--cq-transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+
+	color-scheme: light;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   DARK THEME OVERRIDES
+════════════════════════════════════════════════════════════════ */
+html.credoq-dark {
+	--cq-bg: #0b0f1a;
+	--cq-bg-elevated: #131a2a;
+	--cq-bg-hover: #1c2538;
+	--cq-border: #1f2a3f;
+	--cq-border-strong: #2a3753;
+
+	--cq-text: #e2e8f0;
+	--cq-text-muted: #94a3b8;
+	--cq-text-subtle: #64748b;
+
+	--cq-brand-soft: rgba(79, 70, 229, 0.18);
+
+	--cq-sidebar-bg: #0f1524;
+	--cq-sidebar-text: #94a3b8;
+	--cq-sidebar-bg-hover: #1c2538;
+	--cq-sidebar-bg-active: rgba(79, 70, 229, 0.18);
+	--cq-sidebar-text-active: #a5b4fc;
+	--cq-sidebar-border: #1f2a3f;
+	--cq-sidebar-group-label: #475569;
+
+	--cq-header-bg: #0f1524;
+	--cq-header-border: #1f2a3f;
+
+	--cq-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+	--cq-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+	--cq-shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.5);
+	--cq-shadow-xl: 0 24px 64px rgba(0, 0, 0, 0.6);
+
+	color-scheme: dark;
+}
+
+/* Prevent flash-of-wrong-theme: hide content until theme class is applied */
+html:not(.credoq-theme-ready) body.credoq-takeover .credoq-shell {
+	visibility: hidden;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   TAKEOVER — hide WordPress chrome
+════════════════════════════════════════════════════════════════ */
+body.credoq-takeover {
+	background: var(--cq-bg) !important;
+	font-family: var(--cq-font);
+	color: var(--cq-text);
+	margin: 0;
+}
+body.credoq-takeover #wpadminbar,
+body.credoq-takeover #adminmenumain,
+body.credoq-takeover #adminmenuback,
+body.credoq-takeover #adminmenuwrap,
+body.credoq-takeover #wpfooter,
+body.credoq-takeover .update-nag,
+body.credoq-takeover .notice,
+body.credoq-takeover .updated,
+body.credoq-takeover .error,
+body.credoq-takeover #screen-meta,
+body.credoq-takeover #screen-meta-links {
+	display: none !important;
+}
+body.credoq-takeover #wpwrap {
+	background: var(--cq-bg);
+}
+body.credoq-takeover #wpcontent {
+	margin-left: 0 !important;
+	padding-left: 0 !important;
+	background: var(--cq-bg);
+}
+body.credoq-takeover #wpbody {
+	padding-top: 0 !important;
+}
+body.credoq-takeover #wpbody-content {
+	padding-bottom: 0 !important;
+}
+body.credoq-takeover html {
+	margin-top: 0 !important;
+}
+html.wp-toolbar { padding-top: 0 !important; }
+body.credoq-takeover.wp-toolbar { padding-top: 0 !important; }
+
+/* ════════════════════════════════════════════════════════════════
+   SHELL CONTAINER
+════════════════════════════════════════════════════════════════ */
+.credoq-shell {
+	min-height: 100vh;
+	background: var(--cq-bg);
+	color: var(--cq-text);
+	display: flex;
+	flex-direction: column;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   HEADER
+════════════════════════════════════════════════════════════════ */
+.credoq-shell-header {
+	position: sticky;
+	top: 0;
+	z-index: 100;
+	height: var(--cq-header-height);
+	background: var(--cq-header-bg);
+	border-bottom: 1px solid var(--cq-header-border);
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 0 var(--cq-space-6);
+	gap: var(--cq-space-4);
+}
+.credoq-shell-header-left,
+.credoq-shell-header-right {
+	display: flex;
+	align-items: center;
+	gap: var(--cq-space-4);
+}
+
+.credoq-shell-burger {
+	display: none;
+	background: none;
+	border: none;
+	color: var(--cq-text);
+	cursor: pointer;
+	padding: var(--cq-space-2);
+	border-radius: var(--cq-radius-md);
+	transition: background var(--cq-transition-fast);
+}
+.credoq-shell-burger:hover { background: var(--cq-bg-hover); }
+.credoq-shell-burger:focus-visible {
+	outline: 2px solid var(--cq-brand);
+	outline-offset: 2px;
+}
+
+.credoq-shell-brand {
+	display: flex;
+	align-items: center;
+	gap: var(--cq-space-3);
+	text-decoration: none;
+	color: var(--cq-text);
+	font-weight: 700;
+}
+.credoq-shell-brand:hover { color: var(--cq-brand); }
+.credoq-shell-brand:focus { outline: none; }
+.credoq-shell-brand-mark {
+	width: 34px;
+	height: 34px;
+	border-radius: var(--cq-radius-md);
+	background: linear-gradient(135deg, var(--cq-brand), #7c3aed);
+	color: #fff;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+}
+.credoq-shell-brand-name {
+	font-size: 16px;
+	letter-spacing: -0.01em;
+}
+
+.credoq-shell-breadcrumb {
+	display: flex;
+	align-items: center;
+	gap: var(--cq-space-2);
+	font-size: 13px;
+	color: var(--cq-text-muted);
+}
+.credoq-shell-breadcrumb a {
+	color: var(--cq-text-muted);
+	text-decoration: none;
+	transition: color var(--cq-transition-fast);
+}
+.credoq-shell-breadcrumb a:hover { color: var(--cq-text); }
+.credoq-shell-breadcrumb [aria-current="page"] {
+	color: var(--cq-text);
+	font-weight: 600;
+}
+.credoq-shell-breadcrumb-sep {
+	color: var(--cq-text-subtle);
+}
+
+.credoq-shell-theme-toggle {
+	background: none;
+	border: 1px solid var(--cq-border);
+	color: var(--cq-text-muted);
+	cursor: pointer;
+	width: 38px;
+	height: 38px;
+	border-radius: var(--cq-radius-md);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transition: all var(--cq-transition-fast);
+}
+.credoq-shell-theme-toggle:hover {
+	background: var(--cq-bg-hover);
+	color: var(--cq-text);
+	border-color: var(--cq-border-strong);
+}
+.credoq-shell-theme-toggle:focus-visible {
+	outline: 2px solid var(--cq-brand);
+	outline-offset: 2px;
+}
+.credoq-shell-theme-sun { display: none; }
+.credoq-shell-theme-moon { display: block; }
+html.credoq-dark .credoq-shell-theme-sun { display: block; }
+html.credoq-dark .credoq-shell-theme-moon { display: none; }
+
+.credoq-shell-user {
+	display: flex;
+	align-items: center;
+	gap: var(--cq-space-3);
+	padding: var(--cq-space-2) var(--cq-space-3);
+	border-radius: var(--cq-radius-md);
+}
+.credoq-shell-user-avatar {
+	width: 34px;
+	height: 34px;
+	border-radius: var(--cq-radius-full);
+	background: linear-gradient(135deg, var(--cq-brand), #7c3aed);
+	color: #fff;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-weight: 700;
+	font-size: 14px;
+	flex-shrink: 0;
+}
+.credoq-shell-user-info {
+	display: flex;
+	flex-direction: column;
+	line-height: 1.2;
+}
+.credoq-shell-user-name {
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--cq-text);
+}
+.credoq-shell-user-role {
+	font-size: 11px;
+	color: var(--cq-text-muted);
+}
+
+/* ════════════════════════════════════════════════════════════════
+   BODY (sidebar + content)
+════════════════════════════════════════════════════════════════ */
+.credoq-shell-body {
+	display: flex;
+	flex: 1;
+	min-height: calc(100vh - var(--cq-header-height));
+}
+
+/* ════════════════════════════════════════════════════════════════
+   SIDEBAR
+════════════════════════════════════════════════════════════════ */
+.credoq-shell-sidebar {
+	width: var(--cq-sidebar-width);
+	background: var(--cq-sidebar-bg);
+	border-right: 1px solid var(--cq-sidebar-border);
+	display: flex;
+	flex-direction: column;
+	position: sticky;
+	top: var(--cq-header-height);
+	max-height: calc(100vh - var(--cq-header-height));
+	overflow-y: auto;
+	transition: transform var(--cq-transition);
+}
+.credoq-shell-sidebar-nav {
+	flex: 1;
+	padding: var(--cq-space-4) var(--cq-space-3);
+}
+.credoq-shell-sidebar-group {
+	margin-bottom: var(--cq-space-6);
+}
+.credoq-shell-sidebar-group:last-child { margin-bottom: 0; }
+.credoq-shell-sidebar-group-label {
+	font-size: 11px;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
+	color: var(--cq-sidebar-group-label);
+	padding: 0 var(--cq-space-3);
+	margin-bottom: var(--cq-space-2);
+}
+.credoq-shell-sidebar-item {
+	display: flex;
+	align-items: center;
+	gap: var(--cq-space-3);
+	padding: var(--cq-space-3);
+	margin-bottom: 2px;
+	border-radius: var(--cq-radius-md);
+	color: var(--cq-sidebar-text);
+	text-decoration: none;
+	font-size: 14px;
+	font-weight: 500;
+	transition: all var(--cq-transition-fast);
+	position: relative;
+}
+.credoq-shell-sidebar-item:hover {
+	background: var(--cq-sidebar-bg-hover);
+	color: var(--cq-text);
+}
+.credoq-shell-sidebar-item.is-active {
+	background: var(--cq-sidebar-bg-active);
+	color: var(--cq-sidebar-text-active);
+	font-weight: 600;
+}
+.credoq-shell-sidebar-item.is-active::before {
+	content: '';
+	position: absolute;
+	left: -3px;
+	top: 8px;
+	bottom: 8px;
+	width: 3px;
+	border-radius: 2px;
+	background: var(--cq-brand);
+}
+.credoq-shell-sidebar-item-icon {
+	width: 20px;
+	height: 20px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+}
+.credoq-shell-sidebar-item-icon svg {
+	width: 100%;
+	height: 100%;
+}
+.credoq-shell-sidebar-item-label {
+	flex: 1;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+.credoq-shell-sidebar-item-badge {
+	background: var(--cq-brand);
+	color: #fff;
+	font-size: 10px;
+	font-weight: 700;
+	padding: 2px 8px;
+	border-radius: var(--cq-radius-full);
+	min-width: 18px;
+	text-align: center;
+}
+.credoq-shell-sidebar-footer {
+	padding: var(--cq-space-3);
+	border-top: 1px solid var(--cq-sidebar-border);
+}
+.credoq-shell-sidebar-version {
+	font-size: 11px;
+	color: var(--cq-text-subtle);
+	text-align: center;
+	font-family: var(--cq-font-mono);
+}
+
+/* ════════════════════════════════════════════════════════════════
+   CONTENT
+════════════════════════════════════════════════════════════════ */
+.credoq-shell-content {
+	flex: 1;
+	background: var(--cq-bg);
+	position: relative;
+	min-width: 0; /* prevents flex item overflow */
+}
+.credoq-shell-content-inner {
+	padding: var(--cq-space-6);
+	max-width: 100%;
+}
+
+/* Style the WP .wrap container that our admin pages still use */
+body.credoq-takeover .wrap {
+	margin: 0;
+	max-width: 100%;
+}
+body.credoq-takeover .wrap > h1,
+body.credoq-takeover .wrap > h2:first-child {
+	font-size: 24px;
+	font-weight: 700;
+	letter-spacing: -0.01em;
+	color: var(--cq-text);
+	margin: 0 0 var(--cq-space-6);
+	padding: 0;
+	display: flex;
+	align-items: center;
+	gap: var(--cq-space-3);
+}
+body.credoq-takeover .wrap > h2 {
+	font-size: 18px;
+	font-weight: 600;
+	color: var(--cq-text);
+	margin: var(--cq-space-8) 0 var(--cq-space-4);
+}
+body.credoq-takeover .wrap > h3 {
+	font-size: 15px;
+	font-weight: 600;
+	color: var(--cq-text);
+	margin: var(--cq-space-5) 0 var(--cq-space-2);
+}
+
+/* WP page-title-action button (Add new link in header) */
+body.credoq-takeover .page-title-action {
+	background: var(--cq-brand);
+	color: var(--cq-brand-contrast);
+	border: none;
+	padding: 8px 16px;
+	border-radius: var(--cq-radius-md);
+	font-size: 13px;
+	font-weight: 600;
+	text-decoration: none;
+	display: inline-flex;
+	align-items: center;
+	gap: var(--cq-space-2);
+	transition: background var(--cq-transition-fast);
+	box-shadow: var(--cq-shadow-sm);
+}
+body.credoq-takeover .page-title-action:hover {
+	background: var(--cq-brand-hover);
+	color: var(--cq-brand-contrast);
+	box-shadow: var(--cq-shadow-md);
+}
+
+/* Notices */
+body.credoq-takeover .notice,
+body.credoq-takeover .notice.notice-success,
+body.credoq-takeover .notice.notice-error,
+body.credoq-takeover .notice.notice-warning,
+body.credoq-takeover .notice.notice-info {
+	display: block !important;
+	background: var(--cq-bg-elevated);
+	border: 1px solid var(--cq-border);
+	border-left: 4px solid var(--cq-info);
+	border-radius: var(--cq-radius-md);
+	box-shadow: var(--cq-shadow-sm);
+	padding: var(--cq-space-3) var(--cq-space-4);
+	margin: 0 0 var(--cq-space-4);
+	color: var(--cq-text);
+}
+body.credoq-takeover .notice.notice-success { border-left-color: var(--cq-success); }
+body.credoq-takeover .notice.notice-error   { border-left-color: var(--cq-danger); }
+body.credoq-takeover .notice.notice-warning { border-left-color: var(--cq-warning); }
+body.credoq-takeover .notice p { margin: 0; }
+
+/* Tables */
+body.credoq-takeover .widefat {
+	background: var(--cq-bg-elevated);
+	border: 1px solid var(--cq-border);
+	border-radius: var(--cq-radius-lg);
+	overflow: hidden;
+	box-shadow: var(--cq-shadow-sm);
+	border-collapse: separate;
+	border-spacing: 0;
+	width: 100%;
+}
+body.credoq-takeover .widefat thead th,
+body.credoq-takeover .widefat thead td {
+	background: var(--cq-bg);
+	color: var(--cq-text-muted);
+	font-size: 11px;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	padding: var(--cq-space-3) var(--cq-space-4);
+	border-bottom: 1px solid var(--cq-border);
+	text-align: left;
+}
+body.credoq-takeover .widefat tbody td {
+	padding: var(--cq-space-3) var(--cq-space-4);
+	border-bottom: 1px solid var(--cq-border);
+	color: var(--cq-text);
+	font-size: 14px;
+}
+body.credoq-takeover .widefat tbody tr:last-child td {
+	border-bottom: none;
+}
+body.credoq-takeover .widefat.striped tbody tr:nth-child(odd) {
+	background: var(--cq-bg-hover);
+}
+body.credoq-takeover .widefat tbody tr:hover {
+	background: var(--cq-bg-hover);
+}
+
+/* Forms inside admin */
+body.credoq-takeover form {
+	background: var(--cq-bg-elevated);
+	border: 1px solid var(--cq-border);
+	border-radius: var(--cq-radius-lg);
+	padding: var(--cq-space-5);
+	box-shadow: var(--cq-shadow-sm);
+}
+body.credoq-takeover form.search-form,
+body.credoq-takeover form#posts-filter {
+	background: transparent;
+	border: none;
+	padding: 0;
+	box-shadow: none;
+}
+body.credoq-takeover .form-table {
+	width: 100%;
+	border-collapse: collapse;
+}
+body.credoq-takeover .form-table th {
+	width: 200px;
+	text-align: left;
+	padding: var(--cq-space-3) 0;
+	font-weight: 600;
+	font-size: 13px;
+	color: var(--cq-text);
+	vertical-align: top;
+}
+body.credoq-takeover .form-table td {
+	padding: var(--cq-space-3) 0;
+}
+body.credoq-takeover .form-table .description {
+	color: var(--cq-text-muted);
+	font-size: 12px;
+	margin-top: var(--cq-space-1);
+}
+body.credoq-takeover input[type="text"],
+body.credoq-takeover input[type="email"],
+body.credoq-takeover input[type="url"],
+body.credoq-takeover input[type="number"],
+body.credoq-takeover input[type="password"],
+body.credoq-takeover input[type="search"],
+body.credoq-takeover input[type="date"],
+body.credoq-takeover input[type="time"],
+body.credoq-takeover textarea,
+body.credoq-takeover select {
+	background: var(--cq-bg);
+	color: var(--cq-text);
+	border: 1px solid var(--cq-border);
+	border-radius: var(--cq-radius-md);
+	padding: 8px 12px;
+	font-size: 14px;
+	font-family: var(--cq-font);
+	transition: border-color var(--cq-transition-fast), box-shadow var(--cq-transition-fast);
+	box-shadow: none;
+}
+body.credoq-takeover input[type="text"]:focus,
+body.credoq-takeover input[type="email"]:focus,
+body.credoq-takeover input[type="url"]:focus,
+body.credoq-takeover input[type="number"]:focus,
+body.credoq-takeover input[type="password"]:focus,
+body.credoq-takeover input[type="search"]:focus,
+body.credoq-takeover input[type="date"]:focus,
+body.credoq-takeover input[type="time"]:focus,
+body.credoq-takeover textarea:focus,
+body.credoq-takeover select:focus {
+	outline: none;
+	border-color: var(--cq-brand);
+	box-shadow: 0 0 0 3px var(--cq-brand-soft);
+}
+body.credoq-takeover textarea { min-height: 100px; resize: vertical; font-family: var(--cq-font-mono); }
+body.credoq-takeover .regular-text { width: 100%; max-width: 400px; }
+body.credoq-takeover .large-text { width: 100%; }
+
+/* Buttons */
+body.credoq-takeover .button,
+body.credoq-takeover .button-secondary {
+	background: var(--cq-bg-elevated);
+	color: var(--cq-text);
+	border: 1px solid var(--cq-border-strong);
+	padding: 8px 16px;
+	border-radius: var(--cq-radius-md);
+	font-size: 13px;
+	font-weight: 500;
+	cursor: pointer;
+	text-decoration: none;
+	display: inline-flex;
+	align-items: center;
+	gap: var(--cq-space-2);
+	transition: all var(--cq-transition-fast);
+	box-shadow: none;
+	text-shadow: none;
+	height: auto;
+	line-height: 1.4;
+}
+body.credoq-takeover .button:hover {
+	background: var(--cq-bg-hover);
+	border-color: var(--cq-text-muted);
+	color: var(--cq-text);
+}
+body.credoq-takeover .button-primary {
+	background: var(--cq-brand);
+	color: var(--cq-brand-contrast);
+	border-color: var(--cq-brand);
+	padding: 8px 16px;
+	border-radius: var(--cq-radius-md);
+	font-size: 13px;
+	font-weight: 600;
+	cursor: pointer;
+	transition: all var(--cq-transition-fast);
+	box-shadow: var(--cq-shadow-sm);
+	text-shadow: none;
+	height: auto;
+	line-height: 1.4;
+}
+body.credoq-takeover .button-primary:hover,
+body.credoq-takeover .button-primary:focus {
+	background: var(--cq-brand-hover);
+	border-color: var(--cq-brand-hover);
+	color: var(--cq-brand-contrast);
+	box-shadow: var(--cq-shadow-md);
+}
+
+/* Description text */
+body.credoq-takeover .description {
+	color: var(--cq-text-muted);
+	font-size: 12px;
+	font-style: normal;
+}
+
+/* Code */
+body.credoq-takeover code {
+	background: var(--cq-bg);
+	border: 1px solid var(--cq-border);
+	border-radius: var(--cq-radius-sm);
+	padding: 2px 6px;
+	font-family: var(--cq-font-mono);
+	font-size: 12px;
+	color: var(--cq-text);
+}
+
+/* Pagination */
+body.credoq-takeover .tablenav-pages {
+	margin-top: var(--cq-space-4);
+	display: flex;
+	gap: var(--cq-space-2);
+	align-items: center;
+}
+body.credoq-takeover .tablenav-pages a,
+body.credoq-takeover .tablenav-pages .page-numbers {
+	padding: 6px 12px;
+	border: 1px solid var(--cq-border);
+	border-radius: var(--cq-radius-md);
+	text-decoration: none;
+	color: var(--cq-text-muted);
+	font-size: 13px;
+	background: var(--cq-bg-elevated);
+}
+body.credoq-takeover .tablenav-pages a:hover {
+	background: var(--cq-bg-hover);
+	color: var(--cq-text);
+}
+body.credoq-takeover .tablenav-pages .page-numbers.current {
+	background: var(--cq-brand);
+	color: var(--cq-brand-contrast);
+	border-color: var(--cq-brand);
+}
+
+/* Status badges */
+.credoq-status {
+	display: inline-flex;
+	align-items: center;
+	padding: 3px 10px;
+	border-radius: var(--cq-radius-full);
+	font-size: 11px;
+	font-weight: 600;
+	text-transform: capitalize;
+	letter-spacing: 0.02em;
+}
+.credoq-status-pending   { background: rgba(245, 158, 11, 0.12); color: var(--cq-warning); }
+.credoq-status-confirmed { background: rgba(16, 185, 129, 0.12); color: var(--cq-success); }
+.credoq-status-cancelled { background: rgba(239, 68, 68, 0.12);  color: var(--cq-danger); }
+.credoq-status-rejected  { background: rgba(100, 116, 139, 0.12); color: var(--cq-text-muted); }
+.credoq-status-active    { background: rgba(16, 185, 129, 0.12); color: var(--cq-success); }
+.credoq-status-expired   { background: rgba(100, 116, 139, 0.12); color: var(--cq-text-muted); }
+
+/* ════════════════════════════════════════════════════════════════
+   FLOATING BACK-TO-WP BUTTON
+════════════════════════════════════════════════════════════════ */
+.credoq-shell-fab {
+	position: fixed;
+	bottom: var(--cq-space-6);
+	right: var(--cq-space-6);
+	z-index: 99;
+	width: var(--cq-fab-size);
+	height: var(--cq-fab-size);
+	border-radius: var(--cq-radius-full);
+	background: var(--cq-bg-elevated);
+	border: 1px solid var(--cq-border);
+	color: var(--cq-text-muted);
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 1px;
+	text-decoration: none;
+	box-shadow: var(--cq-shadow-lg);
+	transition: all var(--cq-transition);
+	cursor: pointer;
+}
+.credoq-shell-fab:hover {
+	transform: translateY(-2px);
+	box-shadow: var(--cq-shadow-xl);
+	color: var(--cq-text);
+	border-color: var(--cq-border-strong);
+}
+.credoq-shell-fab:focus {
+	outline: none;
+	box-shadow: var(--cq-shadow-xl), 0 0 0 3px var(--cq-brand-soft);
+}
+.credoq-shell-fab svg { display: block; }
+.credoq-shell-fab-label {
+	font-size: 9px;
+	font-weight: 700;
+	letter-spacing: 0.05em;
+	margin-top: 2px;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   MOBILE — sidebar collapses to drawer
+════════════════════════════════════════════════════════════════ */
+.credoq-shell-backdrop {
+	position: fixed;
+	inset: 0;
+	background: rgba(0, 0, 0, 0.4);
+	z-index: 89;
+	opacity: 0;
+	pointer-events: none;
+	transition: opacity var(--cq-transition);
+}
+body.credoq-shell-sidebar-open .credoq-shell-backdrop {
+	opacity: 1;
+	pointer-events: auto;
+}
+
+@media (max-width: 1024px) {
+	.credoq-shell-burger { display: inline-flex; }
+	.credoq-shell-breadcrumb { display: none; }
+	.credoq-shell-user-info { display: none; }
+	.credoq-shell-sidebar {
+		position: fixed;
+		top: 0;
+		bottom: 0;
+		left: 0;
+		z-index: 90;
+		max-height: 100vh;
+		transform: translateX(-100%);
+		box-shadow: var(--cq-shadow-xl);
+	}
+	body.credoq-shell-sidebar-open .credoq-shell-sidebar {
+		transform: translateX(0);
+	}
+	.credoq-shell-content-inner {
+		padding: var(--cq-space-4);
+	}
+}
+
+@media (max-width: 640px) {
+	.credoq-shell-header {
+		padding: 0 var(--cq-space-3);
+	}
+	.credoq-shell-brand-name {
+		display: none;
+	}
+	.credoq-shell-content-inner {
+		padding: var(--cq-space-3);
+	}
+	body.credoq-takeover .wrap > h1,
+	body.credoq-takeover .wrap > h2:first-child {
+		font-size: 20px;
+	}
+	body.credoq-takeover .form-table th {
+		width: 100%;
+		display: block;
+		padding-bottom: 0;
+	}
+	body.credoq-takeover .form-table td {
+		width: 100%;
+		display: block;
+		padding-top: var(--cq-space-2);
+	}
+	.credoq-shell-fab {
+		bottom: var(--cq-space-4);
+		right: var(--cq-space-4);
+		width: 48px;
+		height: 48px;
+	}
+}
+
+/* Hide the FAB when sidebar drawer is open so they don't overlap */
+body.credoq-shell-sidebar-open .credoq-shell-fab {
+	opacity: 0;
+	pointer-events: none;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   SCROLLBAR (subtle, themed)
+════════════════════════════════════════════════════════════════ */
+.credoq-shell-sidebar::-webkit-scrollbar { width: 6px; }
+.credoq-shell-sidebar::-webkit-scrollbar-track { background: transparent; }
+.credoq-shell-sidebar::-webkit-scrollbar-thumb {
+	background: var(--cq-border-strong);
+	border-radius: 3px;
+}
+.credoq-shell-sidebar::-webkit-scrollbar-thumb:hover {
+	background: var(--cq-text-subtle);
+}
+
+/* ════════════════════════════════════════════════════════════════
+   DASHBOARD HOME PAGE (stat cards + grid)
+════════════════════════════════════════════════════════════════ */
+.credoq-dash-lead {
+	color: var(--cq-text-muted);
+	font-size: 15px;
+	margin: -8px 0 var(--cq-space-6);
+}
+
+.credoq-dash-stats {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+	gap: var(--cq-space-4);
+	margin-bottom: var(--cq-space-6);
+}
+.credoq-stat-card {
+	background: var(--cq-bg-elevated);
+	border: 1px solid var(--cq-border);
+	border-radius: var(--cq-radius-lg);
+	padding: var(--cq-space-5);
+	box-shadow: var(--cq-shadow-sm);
+	display: flex;
+	align-items: center;
+	gap: var(--cq-space-4);
+	transition: all var(--cq-transition-fast);
+}
+.credoq-stat-card:hover {
+	box-shadow: var(--cq-shadow-md);
+	border-color: var(--cq-border-strong);
+}
+.credoq-stat-icon {
+	width: 48px;
+	height: 48px;
+	border-radius: var(--cq-radius-md);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+}
+.credoq-stat-icon-brand   { background: var(--cq-brand-soft); color: var(--cq-brand); }
+.credoq-stat-icon-info    { background: rgba(14, 165, 233, 0.12); color: var(--cq-info); }
+.credoq-stat-icon-warning { background: rgba(245, 158, 11, 0.12); color: var(--cq-warning); }
+.credoq-stat-icon-success { background: rgba(16, 185, 129, 0.12); color: var(--cq-success); }
+.credoq-stat-body { min-width: 0; flex: 1; }
+.credoq-stat-label {
+	font-size: 12px;
+	font-weight: 600;
+	color: var(--cq-text-muted);
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+}
+.credoq-stat-value {
+	font-size: 28px;
+	font-weight: 700;
+	color: var(--cq-text);
+	letter-spacing: -0.02em;
+	line-height: 1.1;
+	margin-top: 4px;
+}
+
+.credoq-dash-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+	gap: var(--cq-space-4);
+}
+.credoq-dash-card {
+	background: var(--cq-bg-elevated);
+	border: 1px solid var(--cq-border);
+	border-radius: var(--cq-radius-lg);
+	box-shadow: var(--cq-shadow-sm);
+	overflow: hidden;
+}
+.credoq-dash-card-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: var(--cq-space-4) var(--cq-space-5);
+	border-bottom: 1px solid var(--cq-border);
+}
+.credoq-dash-card-header h2 {
+	margin: 0;
+	font-size: 14px;
+	font-weight: 600;
+	color: var(--cq-text);
+}
+.credoq-dash-link {
+	font-size: 12px;
+	font-weight: 600;
+	color: var(--cq-brand);
+	text-decoration: none;
+}
+.credoq-dash-link:hover { color: var(--cq-brand-hover); }
+.credoq-dash-empty {
+	padding: var(--cq-space-6);
+	text-align: center;
+	color: var(--cq-text-muted);
+	font-size: 14px;
+	margin: 0;
+}
+.credoq-dash-list {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+.credoq-dash-list-item {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--cq-space-4);
+	padding: var(--cq-space-3) var(--cq-space-5);
+	border-bottom: 1px solid var(--cq-border);
+}
+.credoq-dash-list-item:last-child { border-bottom: none; }
+.credoq-dash-list-main { min-width: 0; flex: 1; }
+.credoq-dash-list-title {
+	font-size: 14px;
+	font-weight: 600;
+	color: var(--cq-text);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+.credoq-dash-list-sub {
+	font-size: 12px;
+	color: var(--cq-text-muted);
+	margin-top: 2px;
+}
+.credoq-dash-list-meta {
+	display: flex;
+	align-items: center;
+	gap: var(--cq-space-3);
+	flex-shrink: 0;
+}
+.credoq-dash-list-meta time {
+	font-size: 12px;
+	color: var(--cq-text-muted);
+}
+.credoq-dash-addon-list {
+	margin: 0;
+	padding: var(--cq-space-4) var(--cq-space-5) var(--cq-space-5);
+	list-style: none;
+}
+.credoq-dash-addon-list li {
+	font-size: 13px;
+	color: var(--cq-text-muted);
+	padding: 6px 0;
+}
+.credoq-dash-addon-list strong {
+	color: var(--cq-text);
+}

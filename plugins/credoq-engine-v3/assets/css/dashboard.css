@@ -1,0 +1,233 @@
+/**
+ * Credoq Engine — Dashboard SPA CSS
+ *
+ * Used by frontend shortcodes:
+ *   [credoq_dashboard_app]
+ *   [credoq_sidebar_nav]
+ *   [credoq_bottom_nav]
+ *
+ * Uses the same design philosophy as admin-shell.css so the frontend
+ * dashboard and the admin takeover look like ONE product.
+ *
+ * Mobile-first responsive: below 768px, the bottom-nav appears and the
+ * sidebar hides.
+ */
+
+/* ════════════════════════════════════════════════════════════════
+   TOKENS
+════════════════════════════════════════════════════════════════ */
+.credoq-app-wrap,
+.cq-sidebar-nav,
+.cq-bottom-nav,
+.credoq-login-gate,
+.credoq-empty-dashboard {
+	--cqfe-brand: #4f46e5;
+	--cqfe-brand-hover: #4338ca;
+	--cqfe-brand-soft: #eef2ff;
+	--cqfe-bg: #f7f8fb;
+	--cqfe-bg-elevated: #ffffff;
+	--cqfe-bg-hover: #f1f5f9;
+	--cqfe-border: #e5e7eb;
+	--cqfe-text: #0f172a;
+	--cqfe-text-muted: #64748b;
+	--cqfe-text-subtle: #94a3b8;
+	--cqfe-radius-md: 10px;
+	--cqfe-radius-lg: 14px;
+	--cqfe-radius-xl: 20px;
+	--cqfe-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04);
+	--cqfe-shadow-md: 0 4px 12px rgba(15, 23, 42, 0.06);
+	--cqfe-shadow-lg: 0 12px 32px rgba(15, 23, 42, 0.08);
+	--cqfe-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+	font-family: var(--cqfe-font);
+}
+
+/* ════════════════════════════════════════════════════════════════
+   DASHBOARD APP (panel container + transitions)
+════════════════════════════════════════════════════════════════ */
+.credoq-app-wrap {
+	position: relative;
+	min-height: 200px;
+}
+.credoq-panel {
+	animation: none;
+}
+.credoq-panel.cq-entering {
+	animation: credoqFadeIn 0.28s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+@keyframes credoqFadeIn {
+	from { opacity: 0; transform: translateY(10px); }
+	to   { opacity: 1; transform: translateY(0); }
+}
+
+.credoq-empty-dashboard {
+	padding: 24px;
+	text-align: center;
+	color: var(--cqfe-text-muted);
+	background: var(--cqfe-bg-elevated);
+	border-radius: var(--cqfe-radius-lg);
+	border: 1px dashed var(--cqfe-border);
+}
+
+.credoq-login-gate {
+	padding: 24px;
+	background: var(--cqfe-brand-soft);
+	border-radius: var(--cqfe-radius-lg);
+	text-align: center;
+	font-size: 14px;
+	color: var(--cqfe-brand);
+}
+.credoq-login-gate a {
+	color: var(--cqfe-brand);
+	font-weight: 600;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   SIDEBAR NAV (desktop)
+════════════════════════════════════════════════════════════════ */
+.cq-sidebar-nav {
+	background: var(--cqfe-bg-elevated);
+	border-radius: var(--cqfe-radius-xl);
+	padding: 20px 14px;
+	box-shadow: var(--cqfe-shadow-md);
+	color: var(--cqfe-text);
+}
+.csn-logo {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	margin-bottom: 18px;
+	padding: 4px 8px 12px;
+	border-bottom: 1px solid var(--cqfe-border);
+}
+.csn-logo-icon {
+	width: 36px;
+	height: 36px;
+	border-radius: var(--cqfe-radius-md);
+	background: linear-gradient(135deg, var(--cqfe-brand), #7c3aed);
+	color: #fff;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+}
+.csn-logo-text strong {
+	font-size: 15px;
+	font-weight: 700;
+	letter-spacing: -0.01em;
+	color: var(--cqfe-text);
+}
+.csn-list { list-style: none; margin: 0; padding: 0; }
+.csn-list li { margin-bottom: 4px; }
+.csn-item {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	width: 100%;
+	padding: 10px 12px;
+	background: none;
+	border: none;
+	cursor: pointer;
+	border-radius: var(--cqfe-radius-md);
+	text-align: left;
+	color: var(--cqfe-text-muted);
+	font-size: 14px;
+	font-weight: 600;
+	font-family: inherit;
+	transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.csn-item:hover { background: var(--cqfe-bg-hover); color: var(--cqfe-text); }
+.csn-item.active { background: var(--cqfe-brand-soft); color: var(--cqfe-brand); }
+.csn-icon {
+	width: 22px;
+	height: 22px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+}
+.csn-footer {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	margin-top: 20px;
+	padding: 12px;
+	background: var(--cqfe-bg);
+	border-radius: var(--cqfe-radius-md);
+}
+.csn-avatar {
+	width: 36px;
+	height: 36px;
+	border-radius: 50%;
+	background: linear-gradient(135deg, var(--cqfe-brand), #7c3aed);
+	color: #fff;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-weight: 800;
+	flex-shrink: 0;
+}
+.csn-user { min-width: 0; flex: 1; }
+.csn-name {
+	font-size: 13px;
+	font-weight: 700;
+	color: var(--cqfe-text);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+.csn-mail {
+	font-size: 11px;
+	color: var(--cqfe-text-muted);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   BOTTOM NAV (mobile)
+════════════════════════════════════════════════════════════════ */
+.cq-bottom-nav {
+	display: none;
+	position: fixed;
+	bottom: 0;
+	left: 0;
+	right: 0;
+	background: var(--cqfe-bg-elevated);
+	border-top: 1px solid var(--cqfe-border);
+	padding: 8px 4px env(safe-area-inset-bottom, 8px);
+	z-index: 99;
+	box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.06);
+}
+.cbn-item {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 4px;
+	padding: 6px 4px;
+	background: none;
+	border: none;
+	cursor: pointer;
+	color: var(--cqfe-text-subtle);
+	font-size: 11px;
+	font-weight: 600;
+	font-family: inherit;
+	transition: color 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.cbn-item.active { color: var(--cqfe-brand); }
+.cbn-icon {
+	width: 22px;
+	height: 22px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   RESPONSIVE
+════════════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+	.cq-bottom-nav { display: flex; }
+	.cq-sidebar-nav { display: none; }
+	.credoq-app-wrap { padding-bottom: 80px; }
+}
