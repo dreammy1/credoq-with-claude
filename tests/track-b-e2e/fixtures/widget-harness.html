@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Credoq Widget E2E Harness</title>
+<link rel="stylesheet" href="booking-widget.min.css">
+</head>
+<body>
+  <!--
+    Mounts the REAL production booking-widget.min.js bundle exactly the way
+    Shortcodes.php does on a live site: a #credoq-booking-root div with a
+    JSON data-config attribute. main.jsx reads this verbatim — nothing in
+    this harness re-implements or mocks the widget itself, only the
+    backend it talks to (via Playwright route interception in the specs).
+  -->
+  <div id="credoq-booking-root" data-config='CONFIG_JSON_PLACEHOLDER'></div>
+  <script src="booking-widget.min.js"></script>
+</body>
+</html>

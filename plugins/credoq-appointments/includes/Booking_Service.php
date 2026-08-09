@@ -317,7 +317,21 @@ class Booking_Service {
             $sum_base_prices += $base_for_slot * $qty_multiplier;
             $slot_price       = ( $base_for_slot * $qty_multiplier ) + $addon_price;
 
-            $initial_status = $use_wc ? 'pending_payment' : 'confirmed';
+            // AUDIT-FIX (Track A settings-integration testing found this
+            // dead setting): 'credoq_booking_settings' → booking_mode
+            // ('auto'/'manual') was saved by Admin\Booking_Settings_Page
+            // and displayed in its UI, but never actually read anywhere in
+            // the booking-creation path — every non-WC booking was
+            // auto-confirmed regardless of what the admin selected. The
+            // admin Bookings page already fully supports a 'pending'
+            // status (label + manual status-change action), so this was
+            // purely a missing read, not missing UI. WC bookings are left
+            // on the existing pending_payment → confirmed flow — payment
+            // itself is already a gate; stacking a second manual-approval
+            // gate on top would need its own product decision, not a QA fix.
+            $global_settings = get_option( 'credoq_booking_settings', [] );
+            $manual_approval = ! $use_wc && 'manual' === ( $global_settings['booking_mode'] ?? 'auto' );
+            $initial_status  = $use_wc ? 'pending_payment' : ( $manual_approval ? 'pending' : 'confirmed' );
 
             $booking_id = Booking_Repository::insert( [
                 'appointment_id'      => intval( $apt->id ),
@@ -378,10 +392,33 @@ class Booking_Service {
         }
 
         // ── Post-commit: notifications (non-WC path) ─────────────────
+        // AUDIT-FIX (found alongside the booking_mode fix above): this
+        // used to unconditionally send the 'confirm' email for every
+        // non-WC booking. That was harmless while booking_mode had no
+        // effect (everything WAS confirmed) — but now that manual
+        // approval can produce a real 'pending' booking, sending a "your
+        // booking is confirmed" email for one awaiting approval would be
+        // a real customer-facing correctness bug. A 'pending' email type
+        // already existed in Booking_Mailer ("Booking Received") but was
+        // never used — this wires it up rather than adding a new template.
+        //
+        // credoq_booking_confirmed itself still fires unconditionally —
+        // Appointments_Bridge::on_confirm() listens to it to upgrade any
+        // held seats to a non-expiring confirmed state. That reservation
+        // step needs to happen regardless of approval mode, or a held
+        // seat would simply expire (5-minute TTL) while an admin reviews
+        // the booking. Only the *customer-facing* signal (email, and the
+        // new credoq_booking_pending_approval hook for anything that
+        // should wait for real sign-off) is gated on $manual_approval.
         if ( ! $use_wc ) {
             foreach ( $booking_ids as $bid ) {
                 do_action( 'credoq_booking_confirmed', $bid );
-                Notifications\Booking_Mailer::send( $bid, 'confirm' );
+                if ( $manual_approval ) {
+                    Notifications\Booking_Mailer::send( $bid, 'pending' );
+                    do_action( 'credoq_booking_pending_approval', $bid );
+                } else {
+                    Notifications\Booking_Mailer::send( $bid, 'confirm' );
+                }
             }
         }
 

@@ -158,9 +158,17 @@ class Appointments_Bridge {
 		$when = trim( ( $row->selected_date ?? '' ) . ' ' . ( $row->selected_time ?? '' ) );
 
 		if ( class_exists( '\CredoqEngine\Mail\Notifications' ) ) {
-			\CredoqEngine\Mail\Notifications::create(
+			// AUDIT-FIX: this text used to hardcode "confirmed" — now
+		// that Booking_Service::create() can produce a real 'pending'
+		// (manual-approval) booking, use the row's own actual status
+		// so the admin bell correctly says a booking is awaiting
+		// their review rather than falsely implying it's done.
+		$is_pending = 'pending' === ( $row->status ?? '' );
+		\CredoqEngine\Mail\Notifications::create(
 				'appointment',
-				sprintf( __( 'Booking confirmed · #%d', 'credoq-seats' ), $booking_id ),
+				$is_pending
+					? sprintf( __( 'Booking awaiting approval · #%d', 'credoq-seats' ), $booking_id )
+					: sprintf( __( 'Booking confirmed · #%d', 'credoq-seats' ), $booking_id ),
 				sprintf( __( '%s booked "%s" for %s', 'credoq-seats' ), $who, $apt_title, $when ),
 				admin_url( 'admin.php?page=credoq-bookings&id=' . $booking_id )
 			);

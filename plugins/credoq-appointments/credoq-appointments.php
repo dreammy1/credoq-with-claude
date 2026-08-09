@@ -3,7 +3,7 @@
  * Plugin Name: Credoq Appointments
  * Plugin URI:  https://credoq.com
  * Description: Full booking engine — services, staff, slot generation, WooCommerce checkout, waiting list, email reminders.
- * Version:     1.2.4
+ * Version:     1.2.5
  * Author:      Credoq
  * Author URI:  https://credoq.com
  * Text Domain: credoq-appointments
@@ -15,7 +15,7 @@
  */
 defined( 'ABSPATH' ) || exit;
 
-define( 'CREDOQ_APT_VERSION', '1.2.4' );
+define( 'CREDOQ_APT_VERSION', '1.2.5' );
 define( 'CREDOQ_APT_FILE',    __FILE__ );
 define( 'CREDOQ_APT_DIR',     plugin_dir_path( __FILE__ ) );
 define( 'CREDOQ_APT_URL',     plugin_dir_url( __FILE__ ) );

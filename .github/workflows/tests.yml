@@ -8,37 +8,60 @@ on:
   workflow_dispatch: {}
 
 jobs:
-  test:
-    name: Run harness test suite (PHP ${{ matrix.php }})
+  mock-harness:
+    name: Cross-plugin harness (PHP ${{ matrix.php }})
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         php: ['8.1', '8.2', '8.3']
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up PHP ${{ matrix.php }}
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: ${{ matrix.php }}
-          coverage: none
-
-      - name: PHP lint every plugin file (fatal syntax check)
-        run: |
-          set -e
-          find plugins -name "*.php" -print0 | xargs -0 -n1 -P4 php -l
-
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with: { php-version: '${{ matrix.php }}', coverage: none }
+      - name: PHP lint every plugin file
+        run: find plugins -name "*.php" -print0 | xargs -0 -n1 -P4 php -l
       - name: Run the cross-plugin harness suite
         env:
           CREDOQ_PLUGINS_DIR: ${{ github.workspace }}/plugins
         run: ./run-all.sh
 
-      - name: Summary
-        if: always()
+  track-a-admin-settings:
+    name: Track A — Backend Admin Settings (real WordPress)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with: { php-version: '8.3', extensions: sqlite3, coverage: none }
+      - name: Boot a headless WordPress + SQLite instance with all 5 plugins active
         run: |
-          echo "### Credoq Suite Test Results (PHP ${{ matrix.php }})" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Full harness output is in the 'Run the cross-plugin harness suite' step above." >> $GITHUB_STEP_SUMMARY
+          chmod +x tests/track-a-admin-settings/setup-wordpress.sh
+          tests/track-a-admin-settings/setup-wordpress.sh /tmp/wpsite ${{ github.workspace }}/plugins
+      - name: Run Track A — every admin setting toggled On/Off against real plugin code
+        run: |
+          chmod +x tests/track-a-admin-settings/run-track-a.sh
+          WPSITE=/tmp/wpsite tests/track-a-admin-settings/run-track-a.sh
+
+  track-b-widget-e2e:
+    name: Track B — React Widget E2E (Playwright)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - name: Install dependencies
+        working-directory: tests/track-b-e2e
+        run: npm ci
+      - name: Install Playwright browsers
+        working-directory: tests/track-b-e2e
+        run: npx playwright install --with-deps chromium
+      - name: Run the real widget bundle through mocked-backend E2E scenarios
+        working-directory: tests/track-b-e2e
+        run: npx playwright test
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: tests/track-b-e2e/playwright-report/
+          retention-days: 14

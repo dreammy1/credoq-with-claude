@@ -3,7 +3,7 @@
  * Plugin Name: Credoq Visual Seats Pro
  * Plugin URI:  https://credoq.com
  * Description: Visual seat-map builder and real-time seat selection for Credoq Events and Credoq Appointments — floors, zones, templates, holds, and per-seat pricing.
- * Version:     1.2.1
+ * Version:     1.2.2
  * Author:      Credoq
  * Author URI:  https://credoq.com
  * Text Domain: credoq-seats
@@ -13,7 +13,7 @@
  */
 defined( 'ABSPATH' ) || exit;
 
-define( 'CREDOQ_SEATS_VERSION', '1.2.1' );
+define( 'CREDOQ_SEATS_VERSION', '1.2.2' );
 define( 'CREDOQ_SEATS_FILE',    __FILE__ );
 define( 'CREDOQ_SEATS_DIR',     plugin_dir_path( __FILE__ ) );
 define( 'CREDOQ_SEATS_URL',     plugin_dir_url( __FILE__ ) );
