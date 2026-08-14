@@ -57,7 +57,15 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Run the real widget bundle through mocked-backend E2E scenarios
         working-directory: tests/track-b-e2e
-        run: npx playwright test
+        run: npx playwright test || true
+      - name: Annotate any failures with real error detail
+        working-directory: tests/track-b-e2e
+        run: |
+          node annotate-failures.js
+          test -f test-results/results.json && node -e "
+            const d = require('./test-results/results.json');
+            process.exit(d.stats && d.stats.unexpected > 0 ? 1 : 0);
+          "
       - name: Upload Playwright report
         if: always()
         uses: actions/upload-artifact@v4
