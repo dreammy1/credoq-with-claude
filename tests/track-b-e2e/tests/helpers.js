@@ -21,7 +21,7 @@ async function mountWidget(page, config) {
   );
   const tmpFile = path.join(FIXTURES_DIR, `_tmp-${Date.now()}-${Math.random().toString(36).slice(2)}.html`);
   fs.writeFileSync(tmpFile, html);
-  await page.goto('file://' + tmpFile);
+  await page.goto('http://127.0.0.1:4173/' + path.basename(tmpFile));
   await page.waitForSelector('#credoq-booking-root', { state: 'attached' });
   page.once('close', () => { try { fs.unlinkSync(tmpFile); } catch (e) {} });
   return tmpFile;

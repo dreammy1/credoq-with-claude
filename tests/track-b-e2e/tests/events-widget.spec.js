@@ -20,7 +20,7 @@ function todayISO() {
 
 function baseConfig(overrides = {}) {
   return Object.assign({
-    ajax_url: 'http://widget-test.local/wp-admin/admin-ajax.php',
+    ajax_url: 'http://127.0.0.1:4173/wp-admin/admin-ajax.php',
     nonce: 'test-nonce-123',
     form_id: 1,
     currency: 'USD',
