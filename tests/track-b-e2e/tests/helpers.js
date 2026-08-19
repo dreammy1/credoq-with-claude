@@ -11,6 +11,10 @@ const FIXTURES_DIR = path.join(__dirname, '..', 'fixtures');
  * to (via mockAjax below), which must be set up BEFORE calling this.
  */
 async function mountWidget(page, config) {
+  page._browserErrors = [];
+  page.on('console', msg => { if (msg.type() === 'error') page._browserErrors.push('[console.error] ' + msg.text()); });
+  page.on('pageerror', err => page._browserErrors.push('[pageerror] ' + err.message));
+
   const html = HARNESS_TEMPLATE.replace(
     'CONFIG_JSON_PLACEHOLDER',
     JSON.stringify(config).replace(/'/g, '&#39;')
@@ -21,6 +25,17 @@ async function mountWidget(page, config) {
   await page.waitForSelector('#credoq-booking-root', { state: 'attached' });
   page.once('close', () => { try { fs.unlinkSync(tmpFile); } catch (e) {} });
   return tmpFile;
+}
+
+/** Wraps an action; on failure, rethrows with any captured browser console/page errors appended so they appear in the CI annotation. */
+async function withDiagnostics(page, label, fn) {
+  try {
+    await fn();
+  } catch (err) {
+    const extra = (page._browserErrors || []).slice(0, 5).join(' ;; ');
+    err.message = `[${label}] ${err.message}${extra ? ' ---BROWSER ERRORS: ' + extra : ' ---no browser console/page errors captured'}`;
+    throw err;
+  }
 }
 
 /**
@@ -54,4 +69,4 @@ async function mockAjax(page, handlers) {
   });
 }
 
-module.exports = { mountWidget, mockAjax };
+module.exports = { mountWidget, mockAjax, withDiagnostics };

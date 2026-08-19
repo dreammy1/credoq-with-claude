@@ -1,5 +1,5 @@
 const { test, expect } = require('@playwright/test');
-const { mountWidget, mockAjax } = require('./helpers');
+const { mountWidget, mockAjax, withDiagnostics } = require('./helpers');
 
 /**
  * AUDIT-FIX (Track B — corrected data model after the first CI run
@@ -67,7 +67,13 @@ test.describe('Events registration — no seat map (free event)', () => {
     // Click the day cell that has events (identified by its title text,
     // not the day-of-month number, so this works regardless of what day
     // the test happens to run).
-    await page.locator('[title*="click to select"]').first().click();
+    await withDiagnostics(page, 'calendar-root-visible', async () => {
+      await expect(page.locator('.cqw-event-cal-root')).toBeVisible({ timeout: 15000 });
+    });
+    await withDiagnostics(page, 'click-day-cell', async () => {
+      await expect(page.locator('[title*="click to select"]').first()).toBeVisible({ timeout: 15000 });
+      await page.locator('[title*="click to select"]').first().click();
+    });
     await expect(page.locator('.cqw-event-row-title', { hasText: 'Community Meetup' })).toBeVisible({ timeout: 10000 });
     await page.locator('.cqw-event-row', { hasText: 'Community Meetup' }).locator('.cqw-event-check-wrap input[type="checkbox"]').check();
 
@@ -127,7 +133,13 @@ test.describe('Events registration — with seat map', () => {
     });
     await mountWidget(page, config);
 
-    await page.locator('[title*="click to select"]').first().click();
+    await withDiagnostics(page, 'calendar-root-visible', async () => {
+      await expect(page.locator('.cqw-event-cal-root')).toBeVisible({ timeout: 15000 });
+    });
+    await withDiagnostics(page, 'click-day-cell', async () => {
+      await expect(page.locator('[title*="click to select"]').first()).toBeVisible({ timeout: 15000 });
+      await page.locator('[title*="click to select"]').first().click();
+    });
     await expect(page.locator('.cqw-event-row-title', { hasText: 'Jazz Night' })).toBeVisible({ timeout: 10000 });
     await page.locator('.cqw-event-row', { hasText: 'Jazz Night' }).locator('.cqw-event-check-wrap input[type="checkbox"]').check();
 
@@ -184,7 +196,13 @@ test.describe('Backend error handling', () => {
     });
     await mountWidget(page, config);
 
-    await page.locator('[title*="click to select"]').first().click();
+    await withDiagnostics(page, 'calendar-root-visible', async () => {
+      await expect(page.locator('.cqw-event-cal-root')).toBeVisible({ timeout: 15000 });
+    });
+    await withDiagnostics(page, 'click-day-cell', async () => {
+      await expect(page.locator('[title*="click to select"]').first()).toBeVisible({ timeout: 15000 });
+      await page.locator('[title*="click to select"]').first().click();
+    });
     await expect(page.locator('.cqw-event-row-title', { hasText: 'Sold Out Show' })).toBeVisible({ timeout: 10000 });
     await page.locator('.cqw-event-row', { hasText: 'Sold Out Show' }).locator('.cqw-event-check-wrap input[type="checkbox"]').check();
 
