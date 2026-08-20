@@ -7,7 +7,7 @@ module.exports = defineConfig({
   workers: 1,
   forbidOnly: !!process.env.CI,
   retries: 0,
-  timeout: 20000,
+  timeout: 45000,
   reporter: [['list'], ['html', { open: 'never' }], ['json', { outputFile: 'test-results/results.json' }]],
   use: {
     trace: 'retain-on-failure',

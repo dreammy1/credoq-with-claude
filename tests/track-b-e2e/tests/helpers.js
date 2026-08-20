@@ -15,29 +15,44 @@ async function mountWidget(page, config) {
   page.on('console', msg => { if (msg.type() === 'error') page._browserErrors.push('[console.error] ' + msg.text()); });
   page.on('pageerror', err => page._browserErrors.push('[pageerror] ' + err.message));
 
+  const t0 = Date.now();
+  const timings = [];
+  const mark = (label) => timings.push(`${label}=${Date.now() - t0}ms`);
+
   const html = HARNESS_TEMPLATE.replace(
     'CONFIG_JSON_PLACEHOLDER',
     JSON.stringify(config).replace(/'/g, '&#39;')
   );
   const tmpFile = path.join(FIXTURES_DIR, `_tmp-${Date.now()}-${Math.random().toString(36).slice(2)}.html`);
   fs.writeFileSync(tmpFile, html);
-  await page.goto('http://127.0.0.1:4173/' + path.basename(tmpFile), { waitUntil: 'load', timeout: 10000 });
-  await page.waitForSelector('#credoq-booking-root', { state: 'attached', timeout: 10000 });
+  mark('file-written');
 
-  // AUDIT-FIX (Track B diagnostics — the outer 30s/20s test timeout kept
-  // preempting finer-grained assertion timeouts, so every CI failure only
-  // ever showed the generic "Test timeout exceeded" with no detail). This
-  // runs immediately after mount, unconditionally, with its own short
-  // hard wait — so the very first CI run using this dumps exactly what
-  // did or didn't render into the failure message itself.
+  try {
+    await page.goto('http://127.0.0.1:4173/' + path.basename(tmpFile), { waitUntil: 'load', timeout: 8000 });
+    mark('goto-done');
+  } catch (e) {
+    throw new Error(`GOTO FAILED after ${timings.join(', ')}: ${e.message}`);
+  }
+
+  try {
+    await page.waitForSelector('#credoq-booking-root', { state: 'attached', timeout: 8000 });
+    mark('root-attached');
+  } catch (e) {
+    throw new Error(`ROOT SELECTOR WAIT FAILED after ${timings.join(', ')}: ${e.message}`);
+  }
+
   await page.waitForTimeout(2000);
-  const rootHTML = await page.locator('#credoq-booking-root').innerHTML().catch(e => '[could not read innerHTML: ' + e.message + ']');
-  const bodyHTML = await page.locator('body').innerHTML().catch(() => '');
+  mark('post-wait');
+
+  const rootHTML = await page.locator('#credoq-booking-root').innerHTML().catch(e => '[innerHTML read failed: ' + e.message + ']');
+  mark('html-read');
+
   if (!rootHTML || rootHTML.trim().length < 20) {
     const errs = (page._browserErrors || []).join(' ;; ') || 'none captured';
+    const bodyHTML = await page.locator('body').innerHTML().catch(() => '[body read failed]');
     throw new Error(
-      `WIDGET DID NOT RENDER. root innerHTML="${rootHTML}". browserErrors=${errs}. ` +
-      `bodyHTML snippet=${bodyHTML.slice(0, 500)}`
+      `WIDGET DID NOT RENDER. timings=[${timings.join(', ')}]. root innerHTML="${rootHTML}". ` +
+      `browserErrors=${errs}. bodyHTML=${bodyHTML.slice(0, 400)}`
     );
   }
 
