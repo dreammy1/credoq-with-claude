@@ -21,8 +21,26 @@ async function mountWidget(page, config) {
   );
   const tmpFile = path.join(FIXTURES_DIR, `_tmp-${Date.now()}-${Math.random().toString(36).slice(2)}.html`);
   fs.writeFileSync(tmpFile, html);
-  await page.goto('http://127.0.0.1:4173/' + path.basename(tmpFile));
-  await page.waitForSelector('#credoq-booking-root', { state: 'attached' });
+  await page.goto('http://127.0.0.1:4173/' + path.basename(tmpFile), { waitUntil: 'load', timeout: 10000 });
+  await page.waitForSelector('#credoq-booking-root', { state: 'attached', timeout: 10000 });
+
+  // AUDIT-FIX (Track B diagnostics — the outer 30s/20s test timeout kept
+  // preempting finer-grained assertion timeouts, so every CI failure only
+  // ever showed the generic "Test timeout exceeded" with no detail). This
+  // runs immediately after mount, unconditionally, with its own short
+  // hard wait — so the very first CI run using this dumps exactly what
+  // did or didn't render into the failure message itself.
+  await page.waitForTimeout(2000);
+  const rootHTML = await page.locator('#credoq-booking-root').innerHTML().catch(e => '[could not read innerHTML: ' + e.message + ']');
+  const bodyHTML = await page.locator('body').innerHTML().catch(() => '');
+  if (!rootHTML || rootHTML.trim().length < 20) {
+    const errs = (page._browserErrors || []).join(' ;; ') || 'none captured';
+    throw new Error(
+      `WIDGET DID NOT RENDER. root innerHTML="${rootHTML}". browserErrors=${errs}. ` +
+      `bodyHTML snippet=${bodyHTML.slice(0, 500)}`
+    );
+  }
+
   page.once('close', () => { try { fs.unlinkSync(tmpFile); } catch (e) {} });
   return tmpFile;
 }
