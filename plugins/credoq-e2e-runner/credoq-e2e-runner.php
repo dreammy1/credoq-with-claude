@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Credoq E2E Audit Runner
  * Description: Protected Credoq audit control panel for dispatching repository-based E2E runs. Deployment remains approval-gated.
- * Version: 0.1.2
+ * Version: 0.1.3
  * Requires Plugins: credoq-engine-v3/credoq-engine.php
  */
 namespace CredoqE2ERunner;
@@ -84,7 +84,7 @@ final class Plugin {
         $s = self::settings();
         if (!$s['github_token']) wp_safe_redirect(admin_url('admin.php?page=credoq-e2e-runner&credoq_e2e=' . rawurlencode('Add a scoped GitHub workflow-dispatch token in runner settings first.'))); else {
             $url = 'https://api.github.com/repos/' . rawurlencode($s['repo']) . '/actions/workflows/' . rawurlencode($s['workflow']) . '/dispatches';
-            $r = wp_remote_post($url, ['timeout'=>20, 'headers'=>['Accept'=>'application/vnd.github+json','Authorization'=>'Bearer ' . $s['github_token'],'X-GitHub-Api-Version'=>'2022-11-28'], 'body'=>wp_json_encode(['ref'=>$s['branch'],'inputs'=>['target'=>$s['target'],'mode'=>'dry-run']])]);
+            $r = wp_remote_post($url, ['timeout'=>20, 'headers'=>['Accept'=>'application/vnd.github+json','Authorization'=>'Bearer ' . $s['github_token'],'X-GitHub-Api-Version'=>'2022-11-28'], 'body'=>wp_json_encode(['ref'=>$s['branch'],'inputs'=>['run_live_audit'=>'false','deploy_production'=>'false']])]);
             $ok = !is_wp_error($r) && in_array(wp_remote_retrieve_response_code($r), [201, 204], true);
             $msg = $ok ? 'Dry-run dispatched to GitHub Actions.' : 'Dispatch failed; inspect the token scope and workflow configuration.';
             wp_safe_redirect(admin_url('admin.php?page=credoq-e2e-runner&credoq_e2e=' . rawurlencode($msg))); exit;
