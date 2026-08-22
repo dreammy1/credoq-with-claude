@@ -75,7 +75,7 @@ test.describe('Events registration — no seat map (free event)', () => {
       await page.locator('[title*="click to select"]').first().click();
     });
     await expect(page.locator('.cqw-event-row-title', { hasText: 'Community Meetup' })).toBeVisible({ timeout: 10000 });
-    await page.locator('.cqw-event-row', { hasText: 'Community Meetup' }).locator('.cqw-event-check-wrap input[type="checkbox"]').check();
+    await page.locator('.cqw-event-row', { hasText: 'Community Meetup' }).locator('.cqw-event-check-wrap').click();
 
     await page.locator('input[name="form_data[name]"]').fill('Jane Visitor');
     await page.locator('input[name="form_data[email]"]').fill('jane@example.test');
@@ -141,7 +141,7 @@ test.describe('Events registration — with seat map', () => {
       await page.locator('[title*="click to select"]').first().click();
     });
     await expect(page.locator('.cqw-event-row-title', { hasText: 'Jazz Night' })).toBeVisible({ timeout: 10000 });
-    await page.locator('.cqw-event-row', { hasText: 'Jazz Night' }).locator('.cqw-event-check-wrap input[type="checkbox"]').check();
+    await page.locator('.cqw-event-row', { hasText: 'Jazz Night' }).locator('.cqw-event-check-wrap').click();
 
     // Qty stepper must be LOCKED once a seat map governs this event —
     // shows "N seats" text, not +/- buttons.
@@ -204,7 +204,7 @@ test.describe('Backend error handling', () => {
       await page.locator('[title*="click to select"]').first().click();
     });
     await expect(page.locator('.cqw-event-row-title', { hasText: 'Sold Out Show' })).toBeVisible({ timeout: 10000 });
-    await page.locator('.cqw-event-row', { hasText: 'Sold Out Show' }).locator('.cqw-event-check-wrap input[type="checkbox"]').check();
+    await page.locator('.cqw-event-row', { hasText: 'Sold Out Show' }).locator('.cqw-event-check-wrap').click();
 
     await page.locator('input[name="form_data[name]"]').fill('Alex Test');
     await page.locator('input[name="form_data[email]"]').fill('alex@example.test');

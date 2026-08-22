@@ -148,7 +148,14 @@ function SeatMapField({ field, name, req, selectedDate, selectedTime, staffId, c
   // Appointments gate on the service's "Enable seat map" toggle. Forms with
   // no `currentApt` (e.g. an Events registration form) have no such toggle —
   // dropping this field type onto the form *is* the enable signal there.
-  const enabled = currentApt ? ( parseInt(currentApt?.visual_seats_enabled || 0, 10) === 1 ) : true;
+  // Event-only forms receive a fallback currentApt object from BookingWidget,
+  // but it has no real appointment ID. Only a real appointment service should
+  // gate seat-map rendering on visual_seats_enabled; event forms are enabled by
+  // the presence of the seat_map field and their resolved event seat plan.
+  const hasAppointmentContext = currentApt && parseInt(currentApt?.id || 0, 10) > 0;
+  const enabled = hasAppointmentContext
+    ? (parseInt(currentApt?.visual_seats_enabled || 0, 10) === 1)
+    : true;
   const mode = field.seat_plan_mode || 'single';
 
   // AUDIT-FEATURE (Events + Seats — event auto-resolution): an
@@ -223,7 +230,7 @@ function SeatMapField({ field, name, req, selectedDate, selectedTime, staffId, c
     // Appointments: availability depends on the picked date/time/staff, so
     // wait until those are chosen. Events: there's no picker — the event's
     // own date is resolved server-side by credoq_seats_load_map instead.
-    const waitingOnSlotPicker = !!currentApt && ( !selectedDate || !selectedTime );
+    const waitingOnSlotPicker = hasAppointmentContext && ( !selectedDate || !selectedTime );
     if (!enabled || !planId || waitingOnSlotPicker) {
       setHtml('');
       return;
@@ -367,7 +374,7 @@ function SeatMapField({ field, name, req, selectedDate, selectedTime, staffId, c
           {planIds.map(pid => <option key={pid} value={pid}>Seat plan #{pid}</option>)}
         </select>
       )}
-      {currentApt && (!selectedDate || !selectedTime) && <div className="cqw-seat-note">Select a date and time slot first.</div>}
+      {hasAppointmentContext && (!selectedDate || !selectedTime) && <div className="cqw-seat-note">Select a date and time slot first.</div>}
       {loading && <div className="cqw-seat-note">Loading seat map...</div>}
       {message && <div className="cqw-seat-note">{message}</div>}
       <div ref={wrapRef} dangerouslySetInnerHTML={{ __html: html }} />
