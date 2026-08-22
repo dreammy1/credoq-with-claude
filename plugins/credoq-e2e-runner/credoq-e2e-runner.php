@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Credoq E2E Audit Runner
  * Description: Protected Credoq audit control panel for dispatching repository-based E2E runs. Deployment remains approval-gated.
- * Version: 0.1.1
+ * Version: 0.1.2
  * Requires Plugins: credoq-engine-v3/credoq-engine.php
  */
 namespace CredoqE2ERunner;
@@ -24,6 +24,7 @@ final class Plugin {
         return wp_parse_args(get_option('credoq_e2e_runner', []), [
             'repo' => 'dreammy1/credoq-with-claude',
             'workflow' => 'credoq-audit-release.yml',
+            'branch' => 'automation/ai-audit-release',
             'target' => 'https://credoq.freedev.app',
             'github_token' => '',
             'mcp_endpoint' => 'https://credoq.freedev.app/wp-json/credoq-mcp/v1/mcp',
@@ -45,6 +46,7 @@ final class Plugin {
                 <table class="form-table"><tbody>
                     <tr><th><label for="credoq-e2e-repo">GitHub repository</label></th><td><input id="credoq-e2e-repo" class="regular-text" name="repo" value="<?php echo esc_attr($s['repo']); ?>"></td></tr>
                     <tr><th><label for="credoq-e2e-workflow">Workflow file</label></th><td><input id="credoq-e2e-workflow" class="regular-text" name="workflow" value="<?php echo esc_attr($s['workflow']); ?>"></td></tr>
+                    <tr><th><label for="credoq-e2e-branch">Workflow branch</label></th><td><input id="credoq-e2e-branch" class="regular-text" name="branch" value="<?php echo esc_attr($s['branch']); ?>"><p class="description">Use <code>automation/ai-audit-release</code> until PR #5 is merged; then change to <code>main</code>.</p></td></tr>
                     <tr><th><label for="credoq-e2e-target">Audit target</label></th><td><input id="credoq-e2e-target" class="large-text" name="target" value="<?php echo esc_attr($s['target']); ?>"></td></tr>
                     <tr><th><label for="credoq-e2e-mcp">MCP endpoint</label></th><td><input id="credoq-e2e-mcp" class="large-text" name="mcp_endpoint" value="<?php echo esc_attr($s['mcp_endpoint']); ?>"></td></tr>
                     <tr><th><label for="credoq-e2e-token">GitHub token</label></th><td><input id="credoq-e2e-token" type="password" class="large-text" name="github_token" value="" autocomplete="new-password"><p class="description">Stored server-side only. Leave blank to keep the existing value.</p></td></tr>
@@ -68,6 +70,7 @@ final class Plugin {
         $new = [
             'repo' => sanitize_text_field(wp_unslash($_POST['repo'] ?? $old['repo'])),
             'workflow' => sanitize_file_name(wp_unslash($_POST['workflow'] ?? $old['workflow'])),
+            'branch' => sanitize_text_field(wp_unslash($_POST['branch'] ?? $old['branch'])),
             'target' => esc_url_raw(wp_unslash($_POST['target'] ?? $old['target'])),
             'mcp_endpoint' => esc_url_raw(wp_unslash($_POST['mcp_endpoint'] ?? $old['mcp_endpoint'])),
             'github_token' => sanitize_text_field(wp_unslash($_POST['github_token'] ?? '')) ?: $old['github_token'],
@@ -81,7 +84,7 @@ final class Plugin {
         $s = self::settings();
         if (!$s['github_token']) wp_safe_redirect(admin_url('admin.php?page=credoq-e2e-runner&credoq_e2e=' . rawurlencode('Add a scoped GitHub workflow-dispatch token in runner settings first.'))); else {
             $url = 'https://api.github.com/repos/' . rawurlencode($s['repo']) . '/actions/workflows/' . rawurlencode($s['workflow']) . '/dispatches';
-            $r = wp_remote_post($url, ['timeout'=>20, 'headers'=>['Accept'=>'application/vnd.github+json','Authorization'=>'Bearer ' . $s['github_token'],'X-GitHub-Api-Version'=>'2022-11-28'], 'body'=>wp_json_encode(['ref'=>'main','inputs'=>['target'=>$s['target'],'mode'=>'dry-run']])]);
+            $r = wp_remote_post($url, ['timeout'=>20, 'headers'=>['Accept'=>'application/vnd.github+json','Authorization'=>'Bearer ' . $s['github_token'],'X-GitHub-Api-Version'=>'2022-11-28'], 'body'=>wp_json_encode(['ref'=>$s['branch'],'inputs'=>['target'=>$s['target'],'mode'=>'dry-run']])]);
             $ok = !is_wp_error($r) && in_array(wp_remote_retrieve_response_code($r), [201, 204], true);
             $msg = $ok ? 'Dry-run dispatched to GitHub Actions.' : 'Dispatch failed; inspect the token scope and workflow configuration.';
             wp_safe_redirect(admin_url('admin.php?page=credoq-e2e-runner&credoq_e2e=' . rawurlencode($msg))); exit;
