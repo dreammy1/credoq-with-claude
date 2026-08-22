@@ -3,6 +3,7 @@ set -Eeuo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 OUT="${1:-${ROOT}/artifacts}"
+if [[ "$OUT" != /* ]]; then OUT="$ROOT/$OUT"; fi
 mkdir -p "$OUT"
 rm -f "$OUT"/credoq-*.zip "$OUT"/SHA256SUMS
 
