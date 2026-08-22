@@ -27,3 +27,9 @@ First, merge pull request #5 after reviewing the workflow and the seat-map fix. 
 The complete 20-field public form submission, email delivery verification, and WooCommerce order-status verification still require a stable authenticated live browser session and a completed unpaid checkout. The current audit evidence records the successful booking-to-checkout transition and the pending-payment booking, but it does not claim that payment, email, or credit deduction passed.
 
 The current repository branch does not yet contain the dashboard runner UI or a voice command implementation. Those should be added only after the MCP deployment contract is finalized, because the UI needs stable job and artifact endpoints. The safest long-term design remains: WordPress dashboard -> authenticated job dispatcher -> GitHub Actions runner -> evidence artifact -> explicit release approval -> MCP deployment endpoint -> backup/rollback verification.
+
+## Dashboard runner module
+
+A first installable `credoq-e2e-runner` addon has now been added. It registers **Credoq → E2E Audit Runner**, stores the audit target and MCP endpoint server-side, and provides a protected **Start dry-run audit** action that dispatches the repository workflow. It intentionally does not expose live deployment controls until the MCP deployment contract is verified.
+
+After installing and activating the ZIP, open `Credoq → E2E Audit Runner`, enter a scoped GitHub workflow-dispatch token in the password field, save settings, and start a dry run. The token is never placed in the browser JavaScript or repository files. The current module is the safe first slice of the requested button/voice bot; voice invocation should be added after the dispatch/status API is confirmed.
