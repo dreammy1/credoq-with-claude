@@ -1,63 +1,45 @@
 const fs = require('fs');
 const path = require('path');
 
-const HARNESS_TEMPLATE = fs.readFileSync(path.join(__dirname, '..', 'fixtures', 'widget-harness.html'), 'utf8');
 const FIXTURES_DIR = path.join(__dirname, '..', 'fixtures');
+const WIDGET_JS = fs.readFileSync(path.join(FIXTURES_DIR, 'booking-widget.min.js'), 'utf8');
+const WIDGET_CSS = fs.readFileSync(path.join(FIXTURES_DIR, 'booking-widget.min.css'), 'utf8');
 
 /**
  * Mounts the REAL production booking-widget.min.js bundle with the given
- * config, exactly the way Shortcodes.php does on a live WordPress page.
- * Nothing about the widget itself is mocked — only the backend it talks
- * to (via mockAjax below), which must be set up BEFORE calling this.
+ * config, exactly the way Shortcodes.php does on a live WordPress page
+ * (a #credoq-booking-root div with a JSON data-config attribute) — but
+ * via page.setContent() + addStyleTag/addScriptTag rather than navigating
+ * to any URL. This makes the test's own page load have ZERO external
+ * network dependency (no file:// origin quirks, no local server to keep
+ * alive, nothing that can itself fail/hang independently of the widget).
+ * The only network activity on the page is the widget's own real AJAX
+ * calls to config.ajax_url — already intercepted via mockAjax()/page.route,
+ * which works at the network layer regardless of the destination's actual
+ * reachability or the page's own origin.
  */
 async function mountWidget(page, config) {
   page._browserErrors = [];
   page.on('console', msg => { if (msg.type() === 'error') page._browserErrors.push('[console.error] ' + msg.text()); });
   page.on('pageerror', err => page._browserErrors.push('[pageerror] ' + err.message));
 
-  const t0 = Date.now();
-  const timings = [];
-  const mark = (label) => timings.push(`${label}=${Date.now() - t0}ms`);
-
-  const html = HARNESS_TEMPLATE.replace(
-    'CONFIG_JSON_PLACEHOLDER',
-    JSON.stringify(config).replace(/'/g, '&#39;')
+  const configJson = JSON.stringify(config).replace(/"/g, '&quot;');
+  await page.setContent(
+    `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>` +
+    `<div id="credoq-booking-root" data-config="${configJson}"></div>` +
+    `</body></html>`,
+    { waitUntil: 'domcontentloaded' }
   );
-  const tmpFile = path.join(FIXTURES_DIR, `_tmp-${Date.now()}-${Math.random().toString(36).slice(2)}.html`);
-  fs.writeFileSync(tmpFile, html);
-  mark('file-written');
+  await page.addStyleTag({ content: WIDGET_CSS });
+  await page.addScriptTag({ content: WIDGET_JS });
 
-  try {
-    await page.goto('http://127.0.0.1:4173/' + path.basename(tmpFile), { waitUntil: 'load', timeout: 8000 });
-    mark('goto-done');
-  } catch (e) {
-    throw new Error(`GOTO FAILED after ${timings.join(', ')}: ${e.message}`);
-  }
-
-  try {
-    await page.waitForSelector('#credoq-booking-root', { state: 'attached', timeout: 8000 });
-    mark('root-attached');
-  } catch (e) {
-    throw new Error(`ROOT SELECTOR WAIT FAILED after ${timings.join(', ')}: ${e.message}`);
-  }
-
-  await page.waitForTimeout(2000);
-  mark('post-wait');
+  await page.waitForTimeout(1500);
 
   const rootHTML = await page.locator('#credoq-booking-root').innerHTML().catch(e => '[innerHTML read failed: ' + e.message + ']');
-  mark('html-read');
-
   if (!rootHTML || rootHTML.trim().length < 20) {
     const errs = (page._browserErrors || []).join(' ;; ') || 'none captured';
-    const bodyHTML = await page.locator('body').innerHTML().catch(() => '[body read failed]');
-    throw new Error(
-      `WIDGET DID NOT RENDER. timings=[${timings.join(', ')}]. root innerHTML="${rootHTML}". ` +
-      `browserErrors=${errs}. bodyHTML=${bodyHTML.slice(0, 400)}`
-    );
+    throw new Error(`WIDGET DID NOT RENDER. root innerHTML="${rootHTML}". browserErrors=${errs}`);
   }
-
-  page.once('close', () => { try { fs.unlinkSync(tmpFile); } catch (e) {} });
-  return tmpFile;
 }
 
 /** Wraps an action; on failure, rethrows with any captured browser console/page errors appended so they appear in the CI annotation. */
