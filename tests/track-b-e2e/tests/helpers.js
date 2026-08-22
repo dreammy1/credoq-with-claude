@@ -4,6 +4,7 @@ const path = require('path');
 const FIXTURES_DIR = path.join(__dirname, '..', 'fixtures');
 const WIDGET_JS = fs.readFileSync(path.join(FIXTURES_DIR, 'booking-widget.min.js'), 'utf8');
 const WIDGET_CSS = fs.readFileSync(path.join(FIXTURES_DIR, 'booking-widget.min.css'), 'utf8');
+const SEAT_JS = fs.readFileSync(path.join(FIXTURES_DIR, 'frontend-seat-map.js'), 'utf8');
 
 /**
  * Mounts the REAL production booking-widget.min.js bundle with the given
@@ -31,6 +32,10 @@ async function mountWidget(page, config) {
     { waitUntil: 'domcontentloaded' }
   );
   await page.addStyleTag({ content: WIDGET_CSS });
+  const seatAjaxUrl = JSON.stringify(config.ajax_url || 'http://127.0.0.1:4173/wp-admin/admin-ajax.php');
+  const seatNonce = JSON.stringify(config.nonce || 'test-nonce-123');
+  await page.addScriptTag({ content: `window.credoqSeatsCfg = { ajaxUrl: ${seatAjaxUrl}, nonce: ${seatNonce} };` });
+  await page.addScriptTag({ content: SEAT_JS });
   await page.addScriptTag({ content: WIDGET_JS });
 
   await page.waitForTimeout(1500);
