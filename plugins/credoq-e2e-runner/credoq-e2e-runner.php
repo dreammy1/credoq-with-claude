@@ -2,8 +2,8 @@
 /**
  * Plugin Name: Credoq E2E Audit Runner
  * Description: Protected Credoq audit control panel for dispatching repository-based E2E runs. Deployment remains approval-gated.
- * Version: 0.1.0
- * Requires Plugins: credoq-engine
+ * Version: 0.1.1
+ * Requires Plugins: credoq-engine-v3/credoq-engine.php
  */
 namespace CredoqE2ERunner;
 
