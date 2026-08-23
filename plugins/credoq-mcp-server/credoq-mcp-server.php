@@ -107,8 +107,10 @@ final class Credoq_MCP_Server {
             [ 'name' => 'credoq_plugin_inventory', 'description' => 'List installed CredoQ plugins, versions, active state, and declared admin surfaces.', 'inputSchema' => [ 'type' => 'object', 'properties' => new stdClass(), 'additionalProperties' => false ] ],
             [ 'name' => 'credoq_list_settings', 'description' => 'List non-secret CredoQ settings currently stored in WordPress.', 'inputSchema' => [ 'type' => 'object', 'properties' => new stdClass(), 'additionalProperties' => false ] ],
             [ 'name' => 'credoq_list_audit_log', 'description' => 'Read paginated CredoQ and AI MCP activity from the CredoQ Audit Log.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'event' => [ 'type' => 'string' ], 'search' => [ 'type' => 'string' ], 'days' => [ 'type' => 'integer', 'minimum' => 1, 'maximum' => 365 ], 'per_page' => [ 'type' => 'integer', 'minimum' => 1, 'maximum' => 100 ], 'page' => [ 'type' => 'integer', 'minimum' => 1 ] ], 'additionalProperties' => false ] ],
+            [ 'name' => 'credoq_preview_e2e_audit', 'description' => 'Preview a staging dry-run E2E audit dispatch; no workflow is started.', 'inputSchema' => [ 'type' => 'object', 'properties' => new stdClass(), 'additionalProperties' => false ] ],
+            [ 'name' => 'credoq_dispatch_e2e_audit', 'description' => 'Dispatch the configured staging dry-run E2E audit only with explicit confirmation; deployment remains disabled.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'proposal_id' => [ 'type' => 'string' ], 'confirm_token' => [ 'type' => 'string' ], 'confirm' => [ 'type' => 'boolean' ] ], 'required' => [ 'proposal_id', 'confirm_token', 'confirm' ], 'additionalProperties' => false ] ],
             [ 'name' => 'credoq_get_setting', 'description' => 'Read one allowlisted CredoQ setting without mutating WordPress.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'option' => [ 'type' => 'string' ] ], 'required' => [ 'option' ], 'additionalProperties' => false ] ],
-            [ 'name' => 'credoq_preview_setting_update', 'description' => 'Preview a settings change and return a one-time confirmation token; no mutation occurs.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'option' => [ 'type' => 'string' ], 'value' => [] ], 'required' => [ 'option', 'value' ], 'additionalProperties' => false ] ],
+            [ 'name' => 'credoq_preview_setting_update', 'description' => 'Preview a settings change and return a one-time confirmation token; no mutation occurs.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'option' => [ 'type' => 'string' ], 'value' => new stdClass() ], 'required' => [ 'option', 'value' ], 'additionalProperties' => false ] ],
             [ 'name' => 'credoq_apply_setting_update', 'description' => 'Apply a previously previewed settings change only with its one-time token and explicit confirm=true.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'proposal_id' => [ 'type' => 'string' ], 'confirm_token' => [ 'type' => 'string' ], 'confirm' => [ 'type' => 'boolean' ] ], 'required' => [ 'proposal_id', 'confirm_token', 'confirm' ], 'additionalProperties' => false ] ],
             [ 'name' => 'credoq_list_bookings', 'description' => 'List CredoQ appointment bookings with bounded pagination.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'limit' => [ 'type' => 'integer', 'minimum' => 1, 'maximum' => 100 ], 'status' => [ 'type' => 'string' ] ], 'additionalProperties' => false ] ],
             [ 'name' => 'credoq_list_membership_plans', 'description' => 'List CredoQ membership plans.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'limit' => [ 'type' => 'integer', 'minimum' => 1, 'maximum' => 100 ] ], 'additionalProperties' => false ] ],
@@ -134,7 +136,7 @@ final class Credoq_MCP_Server {
             [ 'name' => 'credoq_preview_staging_order', 'description' => 'Preview a staging-only WooCommerce order using COD or BACS; no order is created.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'product_id' => [ 'type' => 'integer', 'minimum' => 1 ], 'quantity' => [ 'type' => 'integer', 'minimum' => 1, 'maximum' => 10 ], 'payment_method' => [ 'type' => 'string', 'enum' => [ 'cod', 'bacs' ] ], 'billing' => [ 'type' => 'object' ] ], 'required' => [ 'product_id', 'payment_method', 'billing' ], 'additionalProperties' => false ] ],
             [ 'name' => 'credoq_create_staging_order', 'description' => 'Create a pending, non-capturing staging WooCommerce order only after preview token, confirm=true, and explicit staging-order enablement.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'proposal_id' => [ 'type' => 'string' ], 'confirm_token' => [ 'type' => 'string' ], 'confirm' => [ 'type' => 'boolean' ] ], 'required' => [ 'proposal_id', 'confirm_token', 'confirm' ], 'additionalProperties' => false ] ],
             [ 'name' => 'credoq_get_option', 'description' => 'Backward-compatible alias for credoq_get_setting.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'option' => [ 'type' => 'string' ] ], 'required' => [ 'option' ], 'additionalProperties' => false ] ],
-            [ 'name' => 'credoq_propose_option_update', 'description' => 'Backward-compatible alias for credoq_preview_setting_update.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'option' => [ 'type' => 'string' ], 'value' => [] ], 'required' => [ 'option', 'value' ], 'additionalProperties' => false ] ],
+            [ 'name' => 'credoq_propose_option_update', 'description' => 'Backward-compatible alias for credoq_preview_setting_update.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'option' => [ 'type' => 'string' ], 'value' => new stdClass() ], 'required' => [ 'option', 'value' ], 'additionalProperties' => false ] ],
         ];
     }
 
@@ -160,6 +162,14 @@ final class Credoq_MCP_Server {
                 break;
             case 'credoq_list_audit_log':
                 $result = self::list_audit_log( $args );
+                break;
+            case 'credoq_preview_e2e_audit':
+                $result = self::preview_e2e_audit();
+                if ( isset( $result['error'] ) ) return self::rpc_error( $id, -32602, $result['error'] );
+                break;
+            case 'credoq_dispatch_e2e_audit':
+                $result = self::dispatch_e2e_audit( $args );
+                if ( isset( $result['error'] ) ) return self::rpc_error( $id, -32602, $result['error'] );
                 break;
             case 'credoq_get_setting':
             case 'credoq_get_option':
@@ -385,6 +395,28 @@ final class Credoq_MCP_Server {
         $order = wc_create_order(); $product = wc_get_product( $p['product_id'] ); if ( ! $order || ! $product ) return [ 'error' => 'Order or product creation failed.' ];
         $order->add_product( $product, $p['quantity'] ); foreach ( $p['billing'] as $key => $value ) { $setter = 'set_' . $key; if ( is_callable( [ $order, $setter ] ) ) $order->$setter( $value ); }
         $order->set_payment_method( $p['payment_method'] ); $order->set_payment_method_title( 'cod' === $p['payment_method'] ? 'Cash on delivery' : 'Direct bank transfer' ); $order->calculate_totals(); $order->update_status( 'pending', 'CredoQ MCP staging audit order.' ); $order->add_order_note( 'AUDIT TEST — created by CredoQ MCP staging tool.' ); $order->save(); delete_transient( self::CONFIRM_PREFIX . $id ); self::audit( 'staging_order_created', [ 'order_id' => $order->get_id(), 'payment_method' => $p['payment_method'] ] ); return [ 'status' => 'created', 'order_id' => $order->get_id(), 'status_after_creation' => $order->get_status(), 'payment_method' => $p['payment_method'], 'captured' => false ];
+    }
+
+    private static function preview_e2e_audit() {
+        $s = wp_parse_args( get_option( 'credoq_e2e_runner', [] ), [ 'repo' => '', 'workflow' => '', 'branch' => '', 'target' => '', 'mcp_endpoint' => '', 'github_token' => '' ] );
+        if ( empty( $s['repo'] ) || empty( $s['workflow'] ) || empty( $s['branch'] ) || empty( $s['github_token'] ) ) return [ 'error' => 'E2E runner is not fully configured on staging.' ];
+        $proposal_id = wp_generate_uuid4(); $token = wp_generate_password( 32, false, false );
+        set_transient( self::CONFIRM_PREFIX . $proposal_id, [ 'kind' => 'e2e_dry_run', 'token' => $token, 'repo' => sanitize_text_field( $s['repo'] ), 'workflow' => sanitize_file_name( $s['workflow'] ), 'branch' => sanitize_text_field( $s['branch'] ), 'target' => esc_url_raw( $s['target'] ), 'mcp_endpoint' => esc_url_raw( $s['mcp_endpoint'] ) ], 300 );
+        return [ 'status' => 'awaiting_approval', 'proposal_id' => $proposal_id, 'confirm_token' => $token, 'expires_in' => 300, 'mode' => 'dry-run', 'repo' => $s['repo'], 'workflow' => $s['workflow'], 'branch' => $s['branch'], 'target' => $s['target'], 'mcp_endpoint' => $s['mcp_endpoint'], 'run_live_audit' => false, 'deploy_production' => false, 'warning' => 'No workflow was dispatched.' ];
+    }
+
+    private static function dispatch_e2e_audit( $args ) {
+        if ( empty( $args['confirm'] ) ) return [ 'error' => 'Explicit confirm=true is required.' ];
+        $id = sanitize_text_field( $args['proposal_id'] ?? '' ); $p = get_transient( self::CONFIRM_PREFIX . $id );
+        if ( ! is_array( $p ) || 'e2e_dry_run' !== ( $p['kind'] ?? '' ) || ! hash_equals( (string) $p['token'], (string) ( $args['confirm_token'] ?? '' ) ) ) return [ 'error' => 'Invalid or expired E2E confirmation token.' ];
+        $s = wp_parse_args( get_option( 'credoq_e2e_runner', [] ), [ 'github_token' => '' ] );
+        if ( empty( $s['github_token'] ) ) return [ 'error' => 'E2E runner GitHub token is not configured.' ];
+        $url = 'https://api.github.com/repos/' . implode( '/', array_map( 'rawurlencode', explode( '/', $p['repo'] ) ) ) . '/actions/workflows/' . rawurlencode( $p['workflow'] ) . '/dispatches';
+        $response = wp_remote_post( $url, [ 'timeout' => 20, 'headers' => [ 'Accept' => 'application/vnd.github+json', 'Content-Type' => 'application/json', 'User-Agent' => 'CredoQ-MCP-E2E/0.1.6', 'Authorization' => 'Bearer ' . $s['github_token'], 'X-GitHub-Api-Version' => '2022-11-28' ], 'body' => wp_json_encode( [ 'ref' => $p['branch'], 'inputs' => [ 'run_live_audit' => 'false', 'deploy_production' => 'false' ] ] ) ] );
+        $code = is_wp_error( $response ) ? 0 : (int) wp_remote_retrieve_response_code( $response );
+        if ( is_wp_error( $response ) || ! in_array( $code, [ 201, 204 ], true ) ) return [ 'error' => 'E2E dry-run dispatch failed with HTTP ' . $code . '.' ];
+        delete_transient( self::CONFIRM_PREFIX . $id ); self::audit( 'e2e_dry_run_dispatched', [ 'repo' => $p['repo'], 'workflow' => $p['workflow'], 'branch' => $p['branch'], 'target' => $p['target'] ] );
+        return [ 'status' => 'dispatched', 'mode' => 'dry-run', 'repo' => $p['repo'], 'workflow' => $p['workflow'], 'branch' => $p['branch'], 'target' => $p['target'], 'run_live_audit' => false, 'deploy_production' => false ];
     }
 
     private static function list_audit_log( $args ) {
