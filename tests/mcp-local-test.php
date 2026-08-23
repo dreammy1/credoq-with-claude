@@ -55,6 +55,7 @@ assert_true( in_array( 'credoq_list_settings', $names, true ) && in_array( 'cred
 assert_true( in_array( 'credoq_list_audit_log', $names, true ), 'audit history tool is discoverable' );
 assert_true( in_array( 'credoq_list_bookings', $names, true ) && in_array( 'credoq_list_services', $names, true ) && in_array( 'credoq_list_seat_plans', $names, true ), 'booking, service, and seat tools are discoverable' );
 assert_true( in_array( 'credoq_list_membership_plans', $names, true ) && in_array( 'credoq_list_user_memberships', $names, true ) && in_array( 'credoq_list_credit_ledger', $names, true ), 'membership tools are discoverable' );
+assert_true( in_array( 'credoq_list_staff', $names, true ), 'provider/staff tool is discoverable' );
 assert_true( in_array( 'credoq_list_events', $names, true ) && in_array( 'credoq_list_event_bookings', $names, true ), 'event tools are discoverable' );
 assert_true( in_array( 'credoq_list_forms', $names, true ) && in_array( 'credoq_list_submissions', $names, true ), 'form and submission tools are discoverable' );
 assert_true( in_array( 'credoq_propose_booking_update', $names, true ) && in_array( 'credoq_propose_service_update', $names, true ) && in_array( 'credoq_propose_seat_plan_update', $names, true ), 'management proposal tools are discoverable' );

@@ -120,6 +120,7 @@ final class Credoq_MCP_Server {
             [ 'name' => 'credoq_list_submissions', 'description' => 'List CredoQ form submissions with sensitive payload fields omitted.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'limit' => [ 'type' => 'integer', 'minimum' => 1, 'maximum' => 100 ], 'form_id' => [ 'type' => 'integer', 'minimum' => 1 ], 'status' => [ 'type' => 'string' ] ], 'additionalProperties' => false ] ],
             [ 'name' => 'credoq_get_booking', 'description' => 'Read one CredoQ appointment booking by numeric ID.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'id' => [ 'type' => 'integer', 'minimum' => 1 ] ], 'required' => [ 'id' ], 'additionalProperties' => false ] ],
             [ 'name' => 'credoq_list_services', 'description' => 'List CredoQ appointment services from the appointments catalog.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'limit' => [ 'type' => 'integer', 'minimum' => 1, 'maximum' => 100 ] ], 'additionalProperties' => false ] ],
+            [ 'name' => 'credoq_list_staff', 'description' => 'List CredoQ appointment providers without exposing staff email or private notes.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'limit' => [ 'type' => 'integer', 'minimum' => 1, 'maximum' => 100 ] ], 'additionalProperties' => false ] ],
             [ 'name' => 'credoq_get_service', 'description' => 'Read one CredoQ service/appointment catalog row by numeric ID.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'id' => [ 'type' => 'integer', 'minimum' => 1 ] ], 'required' => [ 'id' ], 'additionalProperties' => false ] ],
             [ 'name' => 'credoq_list_seat_plans', 'description' => 'List configured CredoQ seat plans.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'limit' => [ 'type' => 'integer', 'minimum' => 1, 'maximum' => 100 ] ], 'additionalProperties' => false ] ],
             [ 'name' => 'credoq_get_seat_plan', 'description' => 'Read a seat plan and its seats by numeric plan ID.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'id' => [ 'type' => 'integer', 'minimum' => 1 ] ], 'required' => [ 'id' ], 'additionalProperties' => false ] ],
@@ -207,6 +208,9 @@ final class Credoq_MCP_Server {
             case 'credoq_list_services':
                 $result = self::db_list( 'credoq_appointments', max( 1, min( 100, absint( $args['limit'] ?? 25 ) ) ) );
                 break;
+            case 'credoq_list_staff':
+                $result = self::list_staff( max( 1, min( 100, absint( $args['limit'] ?? 25 ) ) ) );
+                break;
             case 'credoq_get_service':
                 $result = self::db_get( 'credoq_appointments', absint( $args['id'] ?? 0 ) );
                 if ( null === $result ) return self::rpc_error( $id, -32602, 'Service not found.' );
@@ -281,6 +285,14 @@ final class Credoq_MCP_Server {
         $values[] = $limit;
         $rows = (array) $wpdb->get_results( $wpdb->prepare( $sql, $values ), ARRAY_A );
         if ( $redact ) foreach ( $rows as &$row ) { unset( $row['payload'], $row['ip_address'], $row['user_agent'] ); }
+        return $rows;
+    }
+
+    private static function list_staff( $limit = 25 ) {
+        global $wpdb;
+        if ( ! isset( $wpdb ) || ! method_exists( $wpdb, 'get_results' ) ) return [];
+        $table = $wpdb->prefix . 'credoq_staff';
+        $rows = (array) $wpdb->get_results( $wpdb->prepare( "SELECT id, user_id, display_name, avatar_url, price_multiplier, created_at FROM {$table} ORDER BY id DESC LIMIT %d", $limit ), ARRAY_A );
         return $rows;
     }
 
