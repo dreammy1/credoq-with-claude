@@ -118,6 +118,8 @@ final class Credoq_MCP_Server {
             [ 'name' => 'credoq_list_event_bookings', 'description' => 'List CredoQ event registrations.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'limit' => [ 'type' => 'integer', 'minimum' => 1, 'maximum' => 100 ], 'event_id' => [ 'type' => 'integer', 'minimum' => 1 ], 'status' => [ 'type' => 'string' ] ], 'additionalProperties' => false ] ],
             [ 'name' => 'credoq_list_forms', 'description' => 'List CredoQ form schemas and publication state.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'limit' => [ 'type' => 'integer', 'minimum' => 1, 'maximum' => 100 ], 'status' => [ 'type' => 'string' ] ], 'additionalProperties' => false ] ],
             [ 'name' => 'credoq_list_submissions', 'description' => 'List CredoQ form submissions with sensitive payload fields omitted.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'limit' => [ 'type' => 'integer', 'minimum' => 1, 'maximum' => 100 ], 'form_id' => [ 'type' => 'integer', 'minimum' => 1 ], 'status' => [ 'type' => 'string' ] ], 'additionalProperties' => false ] ],
+            [ 'name' => 'credoq_preview_form_update', 'description' => 'Preview a form-builder title, fields, or settings update; no mutation occurs.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'id' => [ 'type' => 'integer', 'minimum' => 1 ], 'title' => [ 'type' => 'string' ], 'fields' => [ 'type' => 'array' ], 'settings' => [ 'type' => 'object' ] ], 'required' => [ 'id' ], 'additionalProperties' => false ] ],
+            [ 'name' => 'credoq_apply_form_update', 'description' => 'Apply a validated form-builder update only with confirm=true and its one-time token.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'proposal_id' => [ 'type' => 'string' ], 'confirm_token' => [ 'type' => 'string' ], 'confirm' => [ 'type' => 'boolean' ] ], 'required' => [ 'proposal_id', 'confirm_token', 'confirm' ], 'additionalProperties' => false ] ],
             [ 'name' => 'credoq_get_booking', 'description' => 'Read one CredoQ appointment booking by numeric ID.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'id' => [ 'type' => 'integer', 'minimum' => 1 ] ], 'required' => [ 'id' ], 'additionalProperties' => false ] ],
             [ 'name' => 'credoq_list_services', 'description' => 'List CredoQ appointment services from the appointments catalog.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'limit' => [ 'type' => 'integer', 'minimum' => 1, 'maximum' => 100 ] ], 'additionalProperties' => false ] ],
             [ 'name' => 'credoq_list_staff', 'description' => 'List CredoQ appointment providers without exposing staff email or private notes.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'limit' => [ 'type' => 'integer', 'minimum' => 1, 'maximum' => 100 ] ], 'additionalProperties' => false ] ],
@@ -201,6 +203,14 @@ final class Credoq_MCP_Server {
             case 'credoq_list_submissions':
                 $result = self::db_list( 'credoq_submissions', max( 1, min( 100, absint( $args['limit'] ?? 25 ) ) ), [ 'form_id' => isset( $args['form_id'] ) ? absint( $args['form_id'] ) : '', 'status' => sanitize_key( $args['status'] ?? '' ) ], true );
                 break;
+            case 'credoq_preview_form_update':
+                $result = self::preview_form_update( $args );
+                if ( isset( $result['error'] ) ) return self::rpc_error( $id, -32602, $result['error'] );
+                break;
+            case 'credoq_apply_form_update':
+                $result = self::apply_form_update( $args );
+                if ( isset( $result['error'] ) ) return self::rpc_error( $id, -32602, $result['error'] );
+                break;
             case 'credoq_get_booking':
                 $result = self::db_get( 'credoq_bookings', absint( $args['id'] ?? 0 ) );
                 if ( null === $result ) return self::rpc_error( $id, -32602, 'Booking not found.' );
@@ -266,6 +276,30 @@ final class Credoq_MCP_Server {
         }
         self::audit( 'tool:' . $name, [ 'args' => array_keys( $args ) ] );
         return self::rpc_result( $id, [ 'content' => [ [ 'type' => 'text', 'text' => wp_json_encode( $result, JSON_UNESCAPED_SLASHES ) ] ], 'structuredContent' => $result ] );
+    }
+
+    private static function preview_form_update( $args ) {
+        $id = absint( $args['id'] ?? 0 ); $before = self::db_get( 'credoq_forms', $id );
+        if ( ! $before ) return [ 'error' => 'Form not found.' ];
+        $changes = [];
+        foreach ( [ 'title', 'fields', 'settings' ] as $field ) if ( array_key_exists( $field, $args ) ) $changes[ $field ] = $args[ $field ];
+        if ( isset( $changes['title'] ) ) $changes['title'] = sanitize_text_field( $changes['title'] );
+        if ( isset( $changes['fields'] ) && ! is_array( $changes['fields'] ) ) return [ 'error' => 'Form fields must be an array.' ];
+        if ( isset( $changes['settings'] ) && ! is_array( $changes['settings'] ) ) return [ 'error' => 'Form settings must be an object.' ];
+        $proposal_id = wp_generate_uuid4(); $token = wp_generate_password( 32, false, false );
+        set_transient( self::CONFIRM_PREFIX . $proposal_id, [ 'kind' => 'form', 'id' => $id, 'changes' => $changes, 'token' => $token ], 300 );
+        return [ 'proposal_id' => $proposal_id, 'confirm_token' => $token, 'expires_in' => 300, 'status' => 'awaiting_approval', 'type' => 'form', 'id' => $id, 'before' => [ 'title' => $before['title'], 'fields' => json_decode( $before['fields'] ?: '[]', true ), 'settings' => json_decode( $before['settings'] ?: '{}', true ) ], 'requested_changes' => $changes, 'warning' => 'No mutation was performed.' ];
+    }
+
+    private static function apply_form_update( $args ) {
+        if ( empty( $args['confirm'] ) ) return [ 'error' => 'Explicit confirm=true is required.' ];
+        $id = sanitize_text_field( $args['proposal_id'] ?? '' ); $proposal = get_transient( self::CONFIRM_PREFIX . $id );
+        if ( ! is_array( $proposal ) || 'form' !== ( $proposal['kind'] ?? '' ) || ! hash_equals( (string) $proposal['token'], (string) ( $args['confirm_token'] ?? '' ) ) ) return [ 'error' => 'Invalid or expired form confirmation token.' ];
+        if ( ! class_exists( '\\CredoqEngine\\Forms\\Repository' ) ) return [ 'error' => 'CredoQ Forms Repository is unavailable.' ];
+        $data = array_merge( [ 'id' => (int) $proposal['id'] ], $proposal['changes'] ); $repo = new \CredoqEngine\Forms\Repository(); $saved = $repo->save( $data );
+        if ( is_wp_error( $saved ) ) return [ 'error' => $saved->get_error_message() ];
+        delete_transient( self::CONFIRM_PREFIX . $id ); self::audit( 'form_update', [ 'id' => (int) $proposal['id'], 'fields' => array_keys( $proposal['changes'] ) ] );
+        return [ 'status' => 'updated', 'proposal_id' => $id, 'type' => 'form', 'id' => (int) $proposal['id'], 'changed_fields' => array_keys( $proposal['changes'] ) ];
     }
 
     private static function db_table( $table ) {
