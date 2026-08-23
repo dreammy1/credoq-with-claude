@@ -17,6 +17,7 @@ function wp_check_password( $key, $hash ) { return password_verify( $key, $hash 
 function wp_generate_uuid4() { return 'proposal-' . bin2hex( random_bytes( 4 ) ); }
 function wp_generate_password( $length = 16, $special = true, $extra = true ) { return substr( bin2hex( random_bytes( 32 ) ), 0, $length ); }
 function sanitize_key( $value ) { return preg_replace( '/[^a-z0-9_\-]/', '', strtolower( (string) $value ) ); }
+function absint( $value ) { return abs( (int) $value ); }
 function sanitize_text_field( $value ) { return trim( strip_tags( (string) $value ) ); }
 function wp_unslash( $value ) { return $value; }
 function wp_json_encode( $value, $flags = 0 ) { return json_encode( $value, $flags ); }
@@ -51,11 +52,17 @@ foreach ( $tool_list as $tool ) {
     assert_true( isset( $tool->inputSchema->properties ) && is_object( $tool->inputSchema->properties ), $tool->name . ' uses object-shaped JSON Schema properties' );
 }
 assert_true( in_array( 'credoq_list_settings', $names, true ) && in_array( 'credoq_apply_setting_update', $names, true ), 'settings tools are discoverable' );
+assert_true( in_array( 'credoq_list_audit_log', $names, true ), 'audit history tool is discoverable' );
 assert_true( in_array( 'credoq_list_bookings', $names, true ) && in_array( 'credoq_list_services', $names, true ) && in_array( 'credoq_list_seat_plans', $names, true ), 'booking, service, and seat tools are discoverable' );
+assert_true( in_array( 'credoq_list_membership_plans', $names, true ) && in_array( 'credoq_list_user_memberships', $names, true ) && in_array( 'credoq_list_credit_ledger', $names, true ), 'membership tools are discoverable' );
+assert_true( in_array( 'credoq_list_events', $names, true ) && in_array( 'credoq_list_event_bookings', $names, true ), 'event tools are discoverable' );
+assert_true( in_array( 'credoq_list_forms', $names, true ) && in_array( 'credoq_list_submissions', $names, true ), 'form and submission tools are discoverable' );
 assert_true( in_array( 'credoq_propose_booking_update', $names, true ) && in_array( 'credoq_propose_service_update', $names, true ) && in_array( 'credoq_propose_seat_plan_update', $names, true ), 'management proposal tools are discoverable' );
 assert_true( in_array( 'credoq_apply_management_proposal', $names, true ), 'confirmed management write tool is discoverable' );
 assert_true( in_array( 'credoq_list_payment_gateways', $names, true ) && in_array( 'credoq_preview_staging_order', $names, true ) && in_array( 'credoq_create_staging_order', $names, true ), 'payment and staging-order tools are discoverable' );
-$read = rpc( [ 'jsonrpc' => '2.0', 'id' => 4, 'method' => 'tools/call', 'params' => [ 'name' => 'credoq_get_setting', 'arguments' => [ 'option' => 'credoq_demo_setting' ] ] ] );
+$audit = rpc( [ 'jsonrpc' => '2.0', 'id' => 4, 'method' => 'tools/call', 'params' => [ 'name' => 'credoq_list_audit_log', 'arguments' => [ 'days' => 7 ] ] ] );
+assert_true( $audit->get_data()['result']['structuredContent']['total'] >= 0, 'audit history can be read without mutation' );
+$read = rpc( [ 'jsonrpc' => '2.0', 'id' => 5, 'method' => 'tools/call', 'params' => [ 'name' => 'credoq_get_setting', 'arguments' => [ 'option' => 'credoq_demo_setting' ] ] ] );
 assert_true( $read->get_data()['result']['structuredContent']['value']['enabled'] === false, 'allowlisted setting can be read' );
 $preview = rpc( [ 'jsonrpc' => '2.0', 'id' => 5, 'method' => 'tools/call', 'params' => [ 'name' => 'credoq_preview_setting_update', 'arguments' => [ 'option' => 'credoq_demo_setting', 'value' => [ 'enabled' => true ] ] ] ] );
 $proposal = $preview->get_data()['result']['structuredContent'];

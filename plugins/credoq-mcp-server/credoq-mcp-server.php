@@ -106,10 +106,18 @@ final class Credoq_MCP_Server {
             [ 'name' => 'credoq_system_status', 'description' => 'Read WordPress, WooCommerce, PHP, and CredoQ plugin status.', 'inputSchema' => [ 'type' => 'object', 'properties' => new stdClass(), 'additionalProperties' => false ] ],
             [ 'name' => 'credoq_plugin_inventory', 'description' => 'List installed CredoQ plugins, versions, active state, and declared admin surfaces.', 'inputSchema' => [ 'type' => 'object', 'properties' => new stdClass(), 'additionalProperties' => false ] ],
             [ 'name' => 'credoq_list_settings', 'description' => 'List non-secret CredoQ settings currently stored in WordPress.', 'inputSchema' => [ 'type' => 'object', 'properties' => new stdClass(), 'additionalProperties' => false ] ],
+            [ 'name' => 'credoq_list_audit_log', 'description' => 'Read paginated CredoQ and AI MCP activity from the CredoQ Audit Log.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'event' => [ 'type' => 'string' ], 'search' => [ 'type' => 'string' ], 'days' => [ 'type' => 'integer', 'minimum' => 1, 'maximum' => 365 ], 'per_page' => [ 'type' => 'integer', 'minimum' => 1, 'maximum' => 100 ], 'page' => [ 'type' => 'integer', 'minimum' => 1 ] ], 'additionalProperties' => false ] ],
             [ 'name' => 'credoq_get_setting', 'description' => 'Read one allowlisted CredoQ setting without mutating WordPress.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'option' => [ 'type' => 'string' ] ], 'required' => [ 'option' ], 'additionalProperties' => false ] ],
             [ 'name' => 'credoq_preview_setting_update', 'description' => 'Preview a settings change and return a one-time confirmation token; no mutation occurs.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'option' => [ 'type' => 'string' ], 'value' => [] ], 'required' => [ 'option', 'value' ], 'additionalProperties' => false ] ],
             [ 'name' => 'credoq_apply_setting_update', 'description' => 'Apply a previously previewed settings change only with its one-time token and explicit confirm=true.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'proposal_id' => [ 'type' => 'string' ], 'confirm_token' => [ 'type' => 'string' ], 'confirm' => [ 'type' => 'boolean' ] ], 'required' => [ 'proposal_id', 'confirm_token', 'confirm' ], 'additionalProperties' => false ] ],
             [ 'name' => 'credoq_list_bookings', 'description' => 'List CredoQ appointment bookings with bounded pagination.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'limit' => [ 'type' => 'integer', 'minimum' => 1, 'maximum' => 100 ], 'status' => [ 'type' => 'string' ] ], 'additionalProperties' => false ] ],
+            [ 'name' => 'credoq_list_membership_plans', 'description' => 'List CredoQ membership plans.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'limit' => [ 'type' => 'integer', 'minimum' => 1, 'maximum' => 100 ] ], 'additionalProperties' => false ] ],
+            [ 'name' => 'credoq_list_user_memberships', 'description' => 'List user membership assignments.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'limit' => [ 'type' => 'integer', 'minimum' => 1, 'maximum' => 100 ], 'user_id' => [ 'type' => 'integer', 'minimum' => 1 ], 'status' => [ 'type' => 'string' ] ], 'additionalProperties' => false ] ],
+            [ 'name' => 'credoq_list_credit_ledger', 'description' => 'List CredoQ membership credit ledger entries.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'limit' => [ 'type' => 'integer', 'minimum' => 1, 'maximum' => 100 ], 'user_id' => [ 'type' => 'integer', 'minimum' => 1 ] ], 'additionalProperties' => false ] ],
+            [ 'name' => 'credoq_list_events', 'description' => 'List CredoQ events.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'limit' => [ 'type' => 'integer', 'minimum' => 1, 'maximum' => 100 ], 'status' => [ 'type' => 'string' ] ], 'additionalProperties' => false ] ],
+            [ 'name' => 'credoq_list_event_bookings', 'description' => 'List CredoQ event registrations.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'limit' => [ 'type' => 'integer', 'minimum' => 1, 'maximum' => 100 ], 'event_id' => [ 'type' => 'integer', 'minimum' => 1 ], 'status' => [ 'type' => 'string' ] ], 'additionalProperties' => false ] ],
+            [ 'name' => 'credoq_list_forms', 'description' => 'List CredoQ form schemas and publication state.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'limit' => [ 'type' => 'integer', 'minimum' => 1, 'maximum' => 100 ], 'status' => [ 'type' => 'string' ] ], 'additionalProperties' => false ] ],
+            [ 'name' => 'credoq_list_submissions', 'description' => 'List CredoQ form submissions with sensitive payload fields omitted.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'limit' => [ 'type' => 'integer', 'minimum' => 1, 'maximum' => 100 ], 'form_id' => [ 'type' => 'integer', 'minimum' => 1 ], 'status' => [ 'type' => 'string' ] ], 'additionalProperties' => false ] ],
             [ 'name' => 'credoq_get_booking', 'description' => 'Read one CredoQ appointment booking by numeric ID.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'id' => [ 'type' => 'integer', 'minimum' => 1 ] ], 'required' => [ 'id' ], 'additionalProperties' => false ] ],
             [ 'name' => 'credoq_list_services', 'description' => 'List CredoQ appointment services from the appointments catalog.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'limit' => [ 'type' => 'integer', 'minimum' => 1, 'maximum' => 100 ] ], 'additionalProperties' => false ] ],
             [ 'name' => 'credoq_get_service', 'description' => 'Read one CredoQ service/appointment catalog row by numeric ID.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'id' => [ 'type' => 'integer', 'minimum' => 1 ] ], 'required' => [ 'id' ], 'additionalProperties' => false ] ],
@@ -147,6 +155,9 @@ final class Credoq_MCP_Server {
             case 'credoq_list_settings':
                 $result = self::list_settings();
                 break;
+            case 'credoq_list_audit_log':
+                $result = self::list_audit_log( $args );
+                break;
             case 'credoq_get_setting':
             case 'credoq_get_option':
                 $option = isset( $args['option'] ) ? sanitize_key( $args['option'] ) : '';
@@ -166,6 +177,28 @@ final class Credoq_MCP_Server {
                 $limit = max( 1, min( 100, absint( $args['limit'] ?? 25 ) ) );
                 $status = isset( $args['status'] ) ? sanitize_key( $args['status'] ) : '';
                 $result = self::db_list( 'credoq_bookings', $limit, $status ? [ 'status' => $status ] : [] );
+                break;
+            case 'credoq_list_membership_plans':
+                $result = self::db_list( 'credoq_membership_plans', max( 1, min( 100, absint( $args['limit'] ?? 25 ) ) ) );
+                break;
+            case 'credoq_list_user_memberships':
+                $where = [ 'user_id' => isset( $args['user_id'] ) ? absint( $args['user_id'] ) : '', 'status' => sanitize_key( $args['status'] ?? '' ) ];
+                $result = self::db_list( 'credoq_user_memberships', max( 1, min( 100, absint( $args['limit'] ?? 25 ) ) ), $where );
+                break;
+            case 'credoq_list_credit_ledger':
+                $result = self::db_list( 'credoq_credit_ledger', max( 1, min( 100, absint( $args['limit'] ?? 25 ) ) ), [ 'user_id' => isset( $args['user_id'] ) ? absint( $args['user_id'] ) : '' ] );
+                break;
+            case 'credoq_list_events':
+                $result = self::db_list( 'credoq_events', max( 1, min( 100, absint( $args['limit'] ?? 25 ) ) ), [ 'status' => sanitize_key( $args['status'] ?? '' ) ] );
+                break;
+            case 'credoq_list_event_bookings':
+                $result = self::db_list( 'credoq_event_bookings', max( 1, min( 100, absint( $args['limit'] ?? 25 ) ) ), [ 'event_id' => isset( $args['event_id'] ) ? absint( $args['event_id'] ) : '', 'status' => sanitize_key( $args['status'] ?? '' ) ] );
+                break;
+            case 'credoq_list_forms':
+                $result = self::db_list( 'credoq_forms', max( 1, min( 100, absint( $args['limit'] ?? 25 ) ) ), [ 'status' => sanitize_key( $args['status'] ?? '' ) ] );
+                break;
+            case 'credoq_list_submissions':
+                $result = self::db_list( 'credoq_submissions', max( 1, min( 100, absint( $args['limit'] ?? 25 ) ) ), [ 'form_id' => isset( $args['form_id'] ) ? absint( $args['form_id'] ) : '', 'status' => sanitize_key( $args['status'] ?? '' ) ], true );
                 break;
             case 'credoq_get_booking':
                 $result = self::db_get( 'credoq_bookings', absint( $args['id'] ?? 0 ) );
@@ -233,20 +266,22 @@ final class Credoq_MCP_Server {
 
     private static function db_table( $table ) {
         global $wpdb;
-        $allowed = [ 'credoq_bookings', 'credoq_appointments', 'credoq_seat_plans', 'credoq_seats' ];
+        $allowed = [ 'credoq_bookings', 'credoq_appointments', 'credoq_seat_plans', 'credoq_seats', 'credoq_membership_plans', 'credoq_user_memberships', 'credoq_credit_ledger', 'credoq_events', 'credoq_event_bookings', 'credoq_forms', 'credoq_submissions' ];
         return in_array( $table, $allowed, true ) && isset( $wpdb ) ? $wpdb->prefix . $table : '';
     }
 
-    private static function db_list( $table, $limit = 25, $where = [] ) {
+    private static function db_list( $table, $limit = 25, $where = [], $redact = false ) {
         global $wpdb;
         $full = self::db_table( $table );
         if ( ! $full || ! method_exists( $wpdb, 'get_results' ) ) return [];
         $clauses = [];
         $values = [];
-        foreach ( $where as $key => $value ) { if ( ! in_array( $key, [ 'status', 'plan_id' ], true ) ) continue; $clauses[] = "`{$key}` = %s"; $values[] = (string) $value; }
+        foreach ( $where as $key => $value ) { if ( '' === (string) $value || ! in_array( $key, [ 'status', 'plan_id', 'user_id', 'event_id', 'form_id' ], true ) ) continue; $clauses[] = "`{$key}` = %s"; $values[] = (string) $value; }
         $sql = "SELECT * FROM {$full}" . ( $clauses ? ' WHERE ' . implode( ' AND ', $clauses ) : '' ) . ' ORDER BY id DESC LIMIT %d';
         $values[] = $limit;
-        return (array) $wpdb->get_results( $wpdb->prepare( $sql, $values ), ARRAY_A );
+        $rows = (array) $wpdb->get_results( $wpdb->prepare( $sql, $values ), ARRAY_A );
+        if ( $redact ) foreach ( $rows as &$row ) { unset( $row['payload'], $row['ip_address'], $row['user_agent'] ); }
+        return $rows;
     }
 
     private static function db_get( $table, $id ) {
@@ -306,6 +341,21 @@ final class Credoq_MCP_Server {
         $order->set_payment_method( $p['payment_method'] ); $order->set_payment_method_title( 'cod' === $p['payment_method'] ? 'Cash on delivery' : 'Direct bank transfer' ); $order->calculate_totals(); $order->update_status( 'pending', 'CredoQ MCP staging audit order.' ); $order->add_order_note( 'AUDIT TEST — created by CredoQ MCP staging tool.' ); $order->save(); delete_transient( self::CONFIRM_PREFIX . $id ); self::audit( 'staging_order_created', [ 'order_id' => $order->get_id(), 'payment_method' => $p['payment_method'] ] ); return [ 'status' => 'created', 'order_id' => $order->get_id(), 'status_after_creation' => $order->get_status(), 'payment_method' => $p['payment_method'], 'captured' => false ];
     }
 
+    private static function list_audit_log( $args ) {
+        if ( class_exists( '\\CredoqEngine\\Log\\Audit_Log' ) && method_exists( '\\CredoqEngine\\Log\\Audit_Log', 'get_entries' ) ) {
+            $entries = \CredoqEngine\Log\Audit_Log::get_entries( [
+                'event' => sanitize_key( $args['event'] ?? '' ),
+                'search' => sanitize_text_field( $args['search'] ?? '' ),
+                'days' => min( 365, max( 0, absint( $args['days'] ?? 0 ) ) ),
+                'per_page' => min( 100, max( 1, absint( $args['per_page'] ?? 50 ) ) ),
+                'paged' => max( 1, absint( $args['page'] ?? 1 ) ),
+            ] );
+            return [ 'source' => 'credoq_audit_log', 'rows' => $entries['rows'], 'total' => $entries['total'], 'pages' => $entries['pages'] ];
+        }
+        $fallback = get_option( self::AUDIT_OPTION, [] );
+        return [ 'source' => self::AUDIT_OPTION, 'rows' => is_array( $fallback ) ? array_reverse( array_slice( $fallback, -100 ) ) : [], 'total' => is_array( $fallback ) ? count( $fallback ) : 0, 'pages' => 1 ];
+    }
+
     private static function list_settings() {
         global $wpdb;
         $names = [];
@@ -327,12 +377,24 @@ final class Credoq_MCP_Server {
     }
 
     private static function rpc_result( $id, $result ) { return new WP_REST_Response( [ 'jsonrpc' => '2.0', 'id' => $id, 'result' => $result ], 200 ); }
-    private static function rpc_error( $id, $code, $message ) { return new WP_REST_Response( [ 'jsonrpc' => '2.0', 'id' => $id, 'error' => [ 'code' => $code, 'message' => $message ] ], 200 ); }
+    private static function rpc_error( $id, $code, $message ) {
+        self::audit( 'rpc_error', [ 'request_id' => $id, 'code' => (int) $code, 'message' => substr( sanitize_text_field( $message ), 0, 180 ) ] );
+        return new WP_REST_Response( [ 'jsonrpc' => '2.0', 'id' => $id, 'error' => [ 'code' => $code, 'message' => $message ] ], 200 );
+    }
 
     private static function audit( $event, $data ) {
+        $safe_event = sanitize_key( $event );
+        $safe_data  = is_array( $data ) ? $data : [];
+        if ( class_exists( '\\CredoqEngine\\Log\\Audit_Log' ) && method_exists( '\\CredoqEngine\\Log\\Audit_Log', 'record' ) ) {
+            \CredoqEngine\Log\Audit_Log::record( 'mcp.' . $safe_event, [
+                'subject' => 'CredoQ MCP',
+                'message' => substr( 'AI MCP action: ' . $safe_event, 0, 255 ),
+                'meta'    => [ 'source' => 'credoq-mcp', 'event' => $safe_event, 'data' => $safe_data ],
+            ] );
+        }
         $log = get_option( self::AUDIT_OPTION, [] );
         if ( ! is_array( $log ) ) $log = [];
-        $log[] = [ 'time' => gmdate( 'c' ), 'event' => sanitize_key( $event ), 'data' => $data, 'ip' => isset( $_SERVER['REMOTE_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) : '' ];
+        $log[] = [ 'time' => gmdate( 'c' ), 'event' => $safe_event, 'data' => $safe_data, 'ip' => isset( $_SERVER['REMOTE_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) : '' ];
         update_option( self::AUDIT_OPTION, array_slice( $log, -200 ), false );
     }
 
