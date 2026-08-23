@@ -47,6 +47,8 @@ assert_true( $init->get_status() === 200 && $init->get_data()['result']['serverI
 $list = rpc( [ 'jsonrpc' => '2.0', 'id' => 3, 'method' => 'tools/list', 'params' => [] ] );
 $names = array_column( $list->get_data()['result']['tools'], 'name' );
 assert_true( in_array( 'credoq_list_settings', $names, true ) && in_array( 'credoq_apply_setting_update', $names, true ), 'settings tools are discoverable' );
+assert_true( in_array( 'credoq_list_bookings', $names, true ) && in_array( 'credoq_list_services', $names, true ) && in_array( 'credoq_list_seat_plans', $names, true ), 'booking, service, and seat tools are discoverable' );
+assert_true( in_array( 'credoq_propose_booking_update', $names, true ) && in_array( 'credoq_propose_service_update', $names, true ) && in_array( 'credoq_propose_seat_plan_update', $names, true ), 'management proposal tools are discoverable' );
 $read = rpc( [ 'jsonrpc' => '2.0', 'id' => 4, 'method' => 'tools/call', 'params' => [ 'name' => 'credoq_get_setting', 'arguments' => [ 'option' => 'credoq_demo_setting' ] ] ] );
 assert_true( $read->get_data()['result']['structuredContent']['value']['enabled'] === false, 'allowlisted setting can be read' );
 $preview = rpc( [ 'jsonrpc' => '2.0', 'id' => 5, 'method' => 'tools/call', 'params' => [ 'name' => 'credoq_preview_setting_update', 'arguments' => [ 'option' => 'credoq_demo_setting', 'value' => [ 'enabled' => true ] ] ] ] );

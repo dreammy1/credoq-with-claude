@@ -2,7 +2,7 @@
 /**
  * Plugin Name: CredoQ MCP Server
  * Description: Authenticated MCP endpoint for scoped AI management of CredoQ plugins.
- * Version: 0.1.0
+ * Version: 0.1.2
  * Requires at least: 6.0
  * Requires PHP: 7.4
  * Author: CredoQ
@@ -86,7 +86,7 @@ final class Credoq_MCP_Server {
             return self::rpc_result( $id, [
                 'protocolVersion' => '2025-06-18',
                 'capabilities' => [ 'tools' => [ 'listChanged' => false ] ],
-                'serverInfo' => [ 'name' => 'credoq-mcp-server', 'version' => '0.1.0' ],
+                'serverInfo' => [ 'name' => 'credoq-mcp-server', 'version' => '0.1.2' ],
             ] );
         }
         if ( 'notifications/initialized' === $method ) {
@@ -109,6 +109,15 @@ final class Credoq_MCP_Server {
             [ 'name' => 'credoq_get_setting', 'description' => 'Read one allowlisted CredoQ setting without mutating WordPress.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'option' => [ 'type' => 'string' ] ], 'required' => [ 'option' ], 'additionalProperties' => false ] ],
             [ 'name' => 'credoq_preview_setting_update', 'description' => 'Preview a settings change and return a one-time confirmation token; no mutation occurs.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'option' => [ 'type' => 'string' ], 'value' => [] ], 'required' => [ 'option', 'value' ], 'additionalProperties' => false ] ],
             [ 'name' => 'credoq_apply_setting_update', 'description' => 'Apply a previously previewed settings change only with its one-time token and explicit confirm=true.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'proposal_id' => [ 'type' => 'string' ], 'confirm_token' => [ 'type' => 'string' ], 'confirm' => [ 'type' => 'boolean' ] ], 'required' => [ 'proposal_id', 'confirm_token', 'confirm' ], 'additionalProperties' => false ] ],
+            [ 'name' => 'credoq_list_bookings', 'description' => 'List CredoQ appointment bookings with bounded pagination.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'limit' => [ 'type' => 'integer', 'minimum' => 1, 'maximum' => 100 ], 'status' => [ 'type' => 'string' ] ], 'additionalProperties' => false ] ],
+            [ 'name' => 'credoq_get_booking', 'description' => 'Read one CredoQ appointment booking by numeric ID.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'id' => [ 'type' => 'integer', 'minimum' => 1 ] ], 'required' => [ 'id' ], 'additionalProperties' => false ] ],
+            [ 'name' => 'credoq_list_services', 'description' => 'List CredoQ appointment services from the appointments catalog.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'limit' => [ 'type' => 'integer', 'minimum' => 1, 'maximum' => 100 ] ], 'additionalProperties' => false ] ],
+            [ 'name' => 'credoq_get_service', 'description' => 'Read one CredoQ service/appointment catalog row by numeric ID.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'id' => [ 'type' => 'integer', 'minimum' => 1 ] ], 'required' => [ 'id' ], 'additionalProperties' => false ] ],
+            [ 'name' => 'credoq_list_seat_plans', 'description' => 'List configured CredoQ seat plans.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'limit' => [ 'type' => 'integer', 'minimum' => 1, 'maximum' => 100 ] ], 'additionalProperties' => false ] ],
+            [ 'name' => 'credoq_get_seat_plan', 'description' => 'Read a seat plan and its seats by numeric plan ID.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'id' => [ 'type' => 'integer', 'minimum' => 1 ] ], 'required' => [ 'id' ], 'additionalProperties' => false ] ],
+            [ 'name' => 'credoq_propose_booking_update', 'description' => 'Preview a booking status or note change; no database mutation occurs.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'id' => [ 'type' => 'integer', 'minimum' => 1 ], 'status' => [ 'type' => 'string' ], 'notes' => [ 'type' => 'string' ] ], 'required' => [ 'id' ], 'additionalProperties' => false ] ],
+            [ 'name' => 'credoq_propose_service_update', 'description' => 'Preview a service title/price change; no database mutation occurs.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'id' => [ 'type' => 'integer', 'minimum' => 1 ], 'title' => [ 'type' => 'string' ], 'price' => [ 'type' => 'number', 'minimum' => 0 ] ], 'required' => [ 'id' ], 'additionalProperties' => false ] ],
+            [ 'name' => 'credoq_propose_seat_plan_update', 'description' => 'Preview a seat-plan name or capacity change; no database mutation occurs.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'id' => [ 'type' => 'integer', 'minimum' => 1 ], 'name' => [ 'type' => 'string' ], 'capacity' => [ 'type' => 'integer', 'minimum' => 0 ] ], 'required' => [ 'id' ], 'additionalProperties' => false ] ],
             [ 'name' => 'credoq_get_option', 'description' => 'Backward-compatible alias for credoq_get_setting.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'option' => [ 'type' => 'string' ] ], 'required' => [ 'option' ], 'additionalProperties' => false ] ],
             [ 'name' => 'credoq_propose_option_update', 'description' => 'Backward-compatible alias for credoq_preview_setting_update.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'option' => [ 'type' => 'string' ], 'value' => [] ], 'required' => [ 'option', 'value' ], 'additionalProperties' => false ] ],
         ];
@@ -149,6 +158,40 @@ final class Credoq_MCP_Server {
                 set_transient( self::CONFIRM_PREFIX . $proposal_id, [ 'option' => $option, 'value' => $args['value'], 'token' => $confirm_token ], 300 );
                 $result = [ 'proposal_id' => $proposal_id, 'status' => 'awaiting_approval', 'option' => $option, 'before' => self::redact_value( $option, get_option( $option, null ) ), 'after' => self::redact_value( $option, $args['value'] ), 'confirm_token' => $confirm_token, 'expires_in' => 300, 'warning' => 'No mutation was performed.' ];
                 break;
+            case 'credoq_list_bookings':
+                $limit = max( 1, min( 100, absint( $args['limit'] ?? 25 ) ) );
+                $status = isset( $args['status'] ) ? sanitize_key( $args['status'] ) : '';
+                $result = self::db_list( 'credoq_bookings', $limit, $status ? [ 'status' => $status ] : [] );
+                break;
+            case 'credoq_get_booking':
+                $result = self::db_get( 'credoq_bookings', absint( $args['id'] ?? 0 ) );
+                if ( null === $result ) return self::rpc_error( $id, -32602, 'Booking not found.' );
+                break;
+            case 'credoq_list_services':
+                $result = self::db_list( 'credoq_appointments', max( 1, min( 100, absint( $args['limit'] ?? 25 ) ) ) );
+                break;
+            case 'credoq_get_service':
+                $result = self::db_get( 'credoq_appointments', absint( $args['id'] ?? 0 ) );
+                if ( null === $result ) return self::rpc_error( $id, -32602, 'Service not found.' );
+                break;
+            case 'credoq_list_seat_plans':
+                $result = self::db_list( 'credoq_seat_plans', max( 1, min( 100, absint( $args['limit'] ?? 25 ) ) ) );
+                break;
+            case 'credoq_get_seat_plan':
+                $plan = self::db_get( 'credoq_seat_plans', absint( $args['id'] ?? 0 ) );
+                if ( null === $plan ) return self::rpc_error( $id, -32602, 'Seat plan not found.' );
+                $plan['seats'] = self::db_list( 'credoq_seats', 100, [ 'plan_id' => absint( $args['id'] ?? 0 ) ] );
+                $result = $plan;
+                break;
+            case 'credoq_propose_booking_update':
+                $result = self::proposal( 'booking', 'credoq_bookings', $args, [ 'status', 'notes' ] );
+                break;
+            case 'credoq_propose_service_update':
+                $result = self::proposal( 'service', 'credoq_appointments', $args, [ 'title', 'price' ] );
+                break;
+            case 'credoq_propose_seat_plan_update':
+                $result = self::proposal( 'seat_plan', 'credoq_seat_plans', $args, [ 'name', 'capacity' ] );
+                break;
             case 'credoq_apply_setting_update':
                 if ( empty( $args['confirm'] ) ) return self::rpc_error( $id, -32602, 'Explicit confirm=true is required.' );
                 $proposal_id = sanitize_text_field( $args['proposal_id'] ?? '' );
@@ -165,6 +208,40 @@ final class Credoq_MCP_Server {
         }
         self::audit( 'tool:' . $name, [ 'args' => array_keys( $args ) ] );
         return self::rpc_result( $id, [ 'content' => [ [ 'type' => 'text', 'text' => wp_json_encode( $result, JSON_UNESCAPED_SLASHES ) ] ], 'structuredContent' => $result ] );
+    }
+
+    private static function db_table( $table ) {
+        global $wpdb;
+        $allowed = [ 'credoq_bookings', 'credoq_appointments', 'credoq_seat_plans', 'credoq_seats' ];
+        return in_array( $table, $allowed, true ) && isset( $wpdb ) ? $wpdb->prefix . $table : '';
+    }
+
+    private static function db_list( $table, $limit = 25, $where = [] ) {
+        global $wpdb;
+        $full = self::db_table( $table );
+        if ( ! $full || ! method_exists( $wpdb, 'get_results' ) ) return [];
+        $clauses = [];
+        $values = [];
+        foreach ( $where as $key => $value ) { if ( ! in_array( $key, [ 'status', 'plan_id' ], true ) ) continue; $clauses[] = "`{$key}` = %s"; $values[] = (string) $value; }
+        $sql = "SELECT * FROM {$full}" . ( $clauses ? ' WHERE ' . implode( ' AND ', $clauses ) : '' ) . ' ORDER BY id DESC LIMIT %d';
+        $values[] = $limit;
+        return (array) $wpdb->get_results( $wpdb->prepare( $sql, $values ), ARRAY_A );
+    }
+
+    private static function db_get( $table, $id ) {
+        global $wpdb;
+        $full = self::db_table( $table );
+        if ( ! $full || ! $id || ! method_exists( $wpdb, 'get_row' ) ) return null;
+        return $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$full} WHERE id = %d", $id ), ARRAY_A ) ?: null;
+    }
+
+    private static function proposal( $type, $table, $args, $fields ) {
+        $id = absint( $args['id'] ?? 0 );
+        $before = self::db_get( $table, $id );
+        if ( null === $before ) return [ 'status' => 'not_found', 'type' => $type, 'id' => $id, 'warning' => 'No mutation was performed.' ];
+        $after = [];
+        foreach ( $fields as $field ) if ( array_key_exists( $field, $args ) ) $after[ $field ] = is_string( $args[ $field ] ) ? sanitize_text_field( $args[ $field ] ) : $args[ $field ];
+        return [ 'status' => 'awaiting_approval', 'type' => $type, 'id' => $id, 'before' => $before, 'requested_changes' => $after, 'warning' => 'No mutation was performed.' ];
     }
 
     private static function list_settings() {

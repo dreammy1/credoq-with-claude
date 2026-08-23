@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "credoq": {
+      "url": "https://YOUR-WORDPRESS-HOST.example/wp-json/credoq-mcp/v1/mcp",
+      "headers": {
+        "Authorization": "Bearer ${CREDOQ_MCP_KEY}"
+      }
+    }
+  }
+}
