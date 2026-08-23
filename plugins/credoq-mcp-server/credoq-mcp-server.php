@@ -105,8 +105,12 @@ final class Credoq_MCP_Server {
         return [
             [ 'name' => 'credoq_system_status', 'description' => 'Read WordPress, WooCommerce, PHP, and CredoQ plugin status.', 'inputSchema' => [ 'type' => 'object', 'properties' => [], 'additionalProperties' => false ] ],
             [ 'name' => 'credoq_plugin_inventory', 'description' => 'List installed CredoQ plugins, versions, active state, and declared admin surfaces.', 'inputSchema' => [ 'type' => 'object', 'properties' => [], 'additionalProperties' => false ] ],
-            [ 'name' => 'credoq_get_option', 'description' => 'Read one allowlisted CredoQ option without mutating WordPress.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'option' => [ 'type' => 'string' ] ], 'required' => [ 'option' ], 'additionalProperties' => false ] ],
-            [ 'name' => 'credoq_propose_option_update', 'description' => 'Create a reviewable before/after option change proposal. This tool never writes until a separate approval mechanism is added.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'option' => [ 'type' => 'string' ], 'value' => [] ], 'required' => [ 'option', 'value' ], 'additionalProperties' => false ] ],
+            [ 'name' => 'credoq_list_settings', 'description' => 'List non-secret CredoQ settings currently stored in WordPress.', 'inputSchema' => [ 'type' => 'object', 'properties' => [], 'additionalProperties' => false ] ],
+            [ 'name' => 'credoq_get_setting', 'description' => 'Read one allowlisted CredoQ setting without mutating WordPress.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'option' => [ 'type' => 'string' ] ], 'required' => [ 'option' ], 'additionalProperties' => false ] ],
+            [ 'name' => 'credoq_preview_setting_update', 'description' => 'Preview a settings change and return a one-time confirmation token; no mutation occurs.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'option' => [ 'type' => 'string' ], 'value' => [] ], 'required' => [ 'option', 'value' ], 'additionalProperties' => false ] ],
+            [ 'name' => 'credoq_apply_setting_update', 'description' => 'Apply a previously previewed settings change only with its one-time token and explicit confirm=true.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'proposal_id' => [ 'type' => 'string' ], 'confirm_token' => [ 'type' => 'string' ], 'confirm' => [ 'type' => 'boolean' ] ], 'required' => [ 'proposal_id', 'confirm_token', 'confirm' ], 'additionalProperties' => false ] ],
+            [ 'name' => 'credoq_get_option', 'description' => 'Backward-compatible alias for credoq_get_setting.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'option' => [ 'type' => 'string' ] ], 'required' => [ 'option' ], 'additionalProperties' => false ] ],
+            [ 'name' => 'credoq_propose_option_update', 'description' => 'Backward-compatible alias for credoq_preview_setting_update.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'option' => [ 'type' => 'string' ], 'value' => [] ], 'required' => [ 'option', 'value' ], 'additionalProperties' => false ] ],
         ];
     }
 
@@ -127,21 +131,54 @@ final class Credoq_MCP_Server {
                     }
                 }
                 break;
+            case 'credoq_list_settings':
+                $result = self::list_settings();
+                break;
+            case 'credoq_get_setting':
             case 'credoq_get_option':
                 $option = isset( $args['option'] ) ? sanitize_key( $args['option'] ) : '';
                 if ( ! self::allowed_option( $option ) ) return self::rpc_error( $id, -32602, 'Option is not allowlisted.' );
-                $result = [ 'option' => $option, 'value' => get_option( $option, null ) ];
+                $result = [ 'option' => $option, 'value' => self::redact_value( $option, get_option( $option, null ) ) ];
                 break;
+            case 'credoq_preview_setting_update':
             case 'credoq_propose_option_update':
                 $option = isset( $args['option'] ) ? sanitize_key( $args['option'] ) : '';
                 if ( ! self::allowed_option( $option ) ) return self::rpc_error( $id, -32602, 'Option is not allowlisted.' );
-                $result = [ 'proposal_id' => wp_generate_uuid4(), 'status' => 'awaiting_approval', 'option' => $option, 'before' => get_option( $option, null ), 'after' => $args['value'], 'warning' => 'No mutation was performed.' ];
+                $proposal_id = wp_generate_uuid4();
+                $confirm_token = wp_generate_password( 32, false, false );
+                set_transient( self::CONFIRM_PREFIX . $proposal_id, [ 'option' => $option, 'value' => $args['value'], 'token' => $confirm_token ], 300 );
+                $result = [ 'proposal_id' => $proposal_id, 'status' => 'awaiting_approval', 'option' => $option, 'before' => self::redact_value( $option, get_option( $option, null ) ), 'after' => self::redact_value( $option, $args['value'] ), 'confirm_token' => $confirm_token, 'expires_in' => 300, 'warning' => 'No mutation was performed.' ];
+                break;
+            case 'credoq_apply_setting_update':
+                if ( empty( $args['confirm'] ) ) return self::rpc_error( $id, -32602, 'Explicit confirm=true is required.' );
+                $proposal_id = sanitize_text_field( $args['proposal_id'] ?? '' );
+                $proposal = get_transient( self::CONFIRM_PREFIX . $proposal_id );
+                if ( ! is_array( $proposal ) || ! hash_equals( (string) $proposal['token'], (string) ( $args['confirm_token'] ?? '' ) ) ) return self::rpc_error( $id, -32602, 'Invalid or expired confirmation token.' );
+                if ( ! self::allowed_option( $proposal['option'] ) ) return self::rpc_error( $id, -32602, 'Option is not allowlisted.' );
+                $before = get_option( $proposal['option'], null );
+                update_option( $proposal['option'], $proposal['value'], false );
+                delete_transient( self::CONFIRM_PREFIX . $proposal_id );
+                $result = [ 'status' => 'updated', 'proposal_id' => $proposal_id, 'option' => $proposal['option'], 'before' => self::redact_value( $proposal['option'], $before ), 'after' => self::redact_value( $proposal['option'], get_option( $proposal['option'], null ) ) ];
                 break;
             default:
                 return self::rpc_error( $id, -32602, 'Unknown or disabled tool.' );
         }
         self::audit( 'tool:' . $name, [ 'args' => array_keys( $args ) ] );
         return self::rpc_result( $id, [ 'content' => [ [ 'type' => 'text', 'text' => wp_json_encode( $result, JSON_UNESCAPED_SLASHES ) ] ], 'structuredContent' => $result ] );
+    }
+
+    private static function list_settings() {
+        global $wpdb;
+        $names = [];
+        if ( isset( $wpdb ) && method_exists( $wpdb, 'get_col' ) ) $names = (array) $wpdb->get_col( "SELECT option_name FROM {$wpdb->options} WHERE option_name LIKE 'credoq%' ORDER BY option_name" );
+        $result = [];
+        foreach ( $names as $name ) $result[] = [ 'option' => $name, 'value' => self::redact_value( $name, get_option( $name, null ) ) ];
+        return [ 'count' => count( $result ), 'settings' => $result ];
+    }
+
+    private static function redact_value( $option, $value ) {
+        if ( preg_match( '/(key|token|secret|password|credential)/i', (string) $option ) ) return '[redacted]';
+        return $value;
     }
 
     private static function allowed_option( $option ) {
