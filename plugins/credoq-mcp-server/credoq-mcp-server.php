@@ -117,7 +117,11 @@ final class Credoq_MCP_Server {
             [ 'name' => 'credoq_get_seat_plan', 'description' => 'Read a seat plan and its seats by numeric plan ID.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'id' => [ 'type' => 'integer', 'minimum' => 1 ] ], 'required' => [ 'id' ], 'additionalProperties' => false ] ],
             [ 'name' => 'credoq_propose_booking_update', 'description' => 'Preview a booking status or note change; no database mutation occurs.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'id' => [ 'type' => 'integer', 'minimum' => 1 ], 'status' => [ 'type' => 'string' ], 'notes' => [ 'type' => 'string' ] ], 'required' => [ 'id' ], 'additionalProperties' => false ] ],
             [ 'name' => 'credoq_propose_service_update', 'description' => 'Preview a service title/price change; no database mutation occurs.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'id' => [ 'type' => 'integer', 'minimum' => 1 ], 'title' => [ 'type' => 'string' ], 'price' => [ 'type' => 'number', 'minimum' => 0 ] ], 'required' => [ 'id' ], 'additionalProperties' => false ] ],
-            [ 'name' => 'credoq_propose_seat_plan_update', 'description' => 'Preview a seat-plan name or capacity change; no database mutation occurs.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'id' => [ 'type' => 'integer', 'minimum' => 1 ], 'name' => [ 'type' => 'string' ], 'capacity' => [ 'type' => 'integer', 'minimum' => 0 ] ], 'required' => [ 'id' ], 'additionalProperties' => false ] ],
+            [ 'name' => 'credoq_propose_seat_plan_update', 'description' => 'Preview a seat-plan name or capacity change and return a one-time confirmation token.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'id' => [ 'type' => 'integer', 'minimum' => 1 ], 'name' => [ 'type' => 'string' ], 'capacity' => [ 'type' => 'integer', 'minimum' => 0 ] ], 'required' => [ 'id' ], 'additionalProperties' => false ] ],
+            [ 'name' => 'credoq_apply_management_proposal', 'description' => 'Apply a booking, service, or seat-plan proposal only with confirm=true and its one-time token.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'proposal_id' => [ 'type' => 'string' ], 'confirm_token' => [ 'type' => 'string' ], 'confirm' => [ 'type' => 'boolean' ] ], 'required' => [ 'proposal_id', 'confirm_token', 'confirm' ], 'additionalProperties' => false ] ],
+            [ 'name' => 'credoq_list_payment_gateways', 'description' => 'List enabled WooCommerce gateways and identify non-capturing methods.', 'inputSchema' => [ 'type' => 'object', 'properties' => [], 'additionalProperties' => false ] ],
+            [ 'name' => 'credoq_preview_staging_order', 'description' => 'Preview a staging-only WooCommerce order using COD or BACS; no order is created.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'product_id' => [ 'type' => 'integer', 'minimum' => 1 ], 'quantity' => [ 'type' => 'integer', 'minimum' => 1, 'maximum' => 10 ], 'payment_method' => [ 'type' => 'string', 'enum' => [ 'cod', 'bacs' ] ], 'billing' => [ 'type' => 'object' ] ], 'required' => [ 'product_id', 'payment_method', 'billing' ], 'additionalProperties' => false ] ],
+            [ 'name' => 'credoq_create_staging_order', 'description' => 'Create a pending, non-capturing staging WooCommerce order only after preview token, confirm=true, and explicit staging-order enablement.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'proposal_id' => [ 'type' => 'string' ], 'confirm_token' => [ 'type' => 'string' ], 'confirm' => [ 'type' => 'boolean' ] ], 'required' => [ 'proposal_id', 'confirm_token', 'confirm' ], 'additionalProperties' => false ] ],
             [ 'name' => 'credoq_get_option', 'description' => 'Backward-compatible alias for credoq_get_setting.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'option' => [ 'type' => 'string' ] ], 'required' => [ 'option' ], 'additionalProperties' => false ] ],
             [ 'name' => 'credoq_propose_option_update', 'description' => 'Backward-compatible alias for credoq_preview_setting_update.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'option' => [ 'type' => 'string' ], 'value' => [] ], 'required' => [ 'option', 'value' ], 'additionalProperties' => false ] ],
         ];
@@ -192,6 +196,23 @@ final class Credoq_MCP_Server {
             case 'credoq_propose_seat_plan_update':
                 $result = self::proposal( 'seat_plan', 'credoq_seat_plans', $args, [ 'name', 'capacity' ] );
                 break;
+            case 'credoq_apply_management_proposal':
+                $result = self::apply_management_proposal( $args );
+                if ( isset( $result['error'] ) ) return self::rpc_error( $id, -32602, $result['error'] );
+                break;
+            case 'credoq_list_payment_gateways':
+                if ( ! function_exists( 'WC' ) || ! WC()->payment_gateways() ) return self::rpc_error( $id, -32602, 'WooCommerce is not available.' );
+                $result = [];
+                foreach ( WC()->payment_gateways()->get_available_payment_gateways() as $gateway ) $result[] = [ 'id' => $gateway->id, 'title' => wp_strip_all_tags( $gateway->get_title() ), 'enabled' => 'yes' === $gateway->enabled, 'non_capturing_allowed' => in_array( $gateway->id, [ 'cod', 'bacs' ], true ) ];
+                break;
+            case 'credoq_preview_staging_order':
+                $result = self::preview_staging_order( $args );
+                if ( isset( $result['error'] ) ) return self::rpc_error( $id, -32602, $result['error'] );
+                break;
+            case 'credoq_create_staging_order':
+                $result = self::create_staging_order( $args );
+                if ( isset( $result['error'] ) ) return self::rpc_error( $id, -32602, $result['error'] );
+                break;
             case 'credoq_apply_setting_update':
                 if ( empty( $args['confirm'] ) ) return self::rpc_error( $id, -32602, 'Explicit confirm=true is required.' );
                 $proposal_id = sanitize_text_field( $args['proposal_id'] ?? '' );
@@ -241,7 +262,48 @@ final class Credoq_MCP_Server {
         if ( null === $before ) return [ 'status' => 'not_found', 'type' => $type, 'id' => $id, 'warning' => 'No mutation was performed.' ];
         $after = [];
         foreach ( $fields as $field ) if ( array_key_exists( $field, $args ) ) $after[ $field ] = is_string( $args[ $field ] ) ? sanitize_text_field( $args[ $field ] ) : $args[ $field ];
-        return [ 'status' => 'awaiting_approval', 'type' => $type, 'id' => $id, 'before' => $before, 'requested_changes' => $after, 'warning' => 'No mutation was performed.' ];
+        $proposal_id = wp_generate_uuid4(); $token = wp_generate_password( 32, false, false );
+        set_transient( self::CONFIRM_PREFIX . $proposal_id, [ 'kind' => $type, 'table' => $table, 'id' => $id, 'changes' => $after, 'token' => $token ], 300 );
+        return [ 'proposal_id' => $proposal_id, 'confirm_token' => $token, 'expires_in' => 300, 'status' => 'awaiting_approval', 'type' => $type, 'id' => $id, 'before' => $before, 'requested_changes' => $after, 'warning' => 'No mutation was performed.' ];
+    }
+
+    private static function apply_management_proposal( $args ) {
+        if ( empty( $args['confirm'] ) ) return [ 'error' => 'Explicit confirm=true is required.' ];
+        $id = sanitize_text_field( $args['proposal_id'] ?? '' ); $proposal = get_transient( self::CONFIRM_PREFIX . $id );
+        if ( ! is_array( $proposal ) || ! hash_equals( (string) $proposal['token'], (string) ( $args['confirm_token'] ?? '' ) ) ) return [ 'error' => 'Invalid or expired confirmation token.' ];
+        $changes = $proposal['changes']; $ok = false;
+        if ( 'booking' === $proposal['kind'] ) {
+            $allowed_statuses = [ 'confirmed', 'pending_payment', 'cancelled', 'failed', 'refunded' ];
+            if ( isset( $changes['status'] ) && ! in_array( $changes['status'], $allowed_statuses, true ) ) return [ 'error' => 'Booking status is not allowed.' ];
+            global $wpdb; $safe = array_intersect_key( $changes, array_flip( [ 'status', 'notes' ] ) );
+            if ( $safe && isset( $wpdb ) && method_exists( $wpdb, 'update' ) ) $ok = false !== $wpdb->update( self::db_table( 'credoq_bookings' ), $safe, [ 'id' => (int) $proposal['id'] ] );
+        } elseif ( in_array( $proposal['kind'], [ 'service', 'seat_plan' ], true ) ) { global $wpdb; $allowed = 'service' === $proposal['kind'] ? [ 'title', 'price' ] : [ 'name', 'capacity' ]; $safe = array_intersect_key( $changes, array_flip( $allowed ) ); if ( $safe ) $ok = (bool) $wpdb->update( self::db_table( $proposal['table'] ), $safe, [ 'id' => (int) $proposal['id'] ] ); }
+        if ( ! $ok ) return [ 'error' => 'The typed repository update was not applied.' ];
+        delete_transient( self::CONFIRM_PREFIX . $id ); self::audit( 'management_update:' . $proposal['kind'], [ 'id' => $proposal['id'], 'fields' => array_keys( $changes ) ] );
+        return [ 'status' => 'updated', 'proposal_id' => $id, 'type' => $proposal['kind'], 'id' => (int) $proposal['id'], 'changed_fields' => array_keys( $changes ) ];
+    }
+
+    private static function preview_staging_order( $args ) {
+        if ( ! function_exists( 'wc_get_product' ) || ! function_exists( 'WC' ) ) return [ 'error' => 'WooCommerce is not available.' ];
+        $method = sanitize_key( $args['payment_method'] ?? '' ); if ( ! in_array( $method, [ 'cod', 'bacs' ], true ) ) return [ 'error' => 'Only COD or BACS is allowed for MCP staging orders.' ];
+        $product = wc_get_product( absint( $args['product_id'] ?? 0 ) ); if ( ! $product ) return [ 'error' => 'Product not found.' ];
+        $billing = is_array( $args['billing'] ?? null ) ? $args['billing'] : []; if ( empty( $billing['email'] ) || ! is_email( $billing['email'] ) ) return [ 'error' => 'A valid synthetic billing email is required.' ];
+        $proposal_id = wp_generate_uuid4(); $token = wp_generate_password( 32, false, false ); $qty = max( 1, min( 10, absint( $args['quantity'] ?? 1 ) ) );
+        set_transient( self::CONFIRM_PREFIX . $proposal_id, [ 'kind' => 'staging_order', 'token' => $token, 'product_id' => $product->get_id(), 'quantity' => $qty, 'payment_method' => $method, 'billing' => array_map( 'sanitize_text_field', $billing ) ], 300 );
+        return [ 'status' => 'awaiting_approval', 'proposal_id' => $proposal_id, 'confirm_token' => $token, 'product_id' => $product->get_id(), 'product_name' => $product->get_name(), 'quantity' => $qty, 'payment_method' => $method, 'estimated_total' => (float) $product->get_price() * $qty, 'expires_in' => 300, 'warning' => 'No order was created.' ];
+    }
+
+    private static function create_staging_order( $args ) {
+        if ( empty( $args['confirm'] ) ) return [ 'error' => 'Explicit confirm=true is required.' ];
+        if ( ! defined( 'CREDOQ_MCP_STAGING_MODE' ) || true !== CREDOQ_MCP_STAGING_MODE ) return [ 'error' => 'Staging order creation requires CREDOQ_MCP_STAGING_MODE=true in staging wp-config.php.' ];
+        if ( function_exists( 'wp_get_environment_type' ) && 'production' === wp_get_environment_type() ) return [ 'error' => 'Order creation is disabled in production environment.' ];
+        if ( ! get_option( 'credoq_mcp_enable_staging_orders', false ) ) return [ 'error' => 'Staging order creation is disabled. Enable credoq_mcp_enable_staging_orders explicitly on staging.' ];
+        $id = sanitize_text_field( $args['proposal_id'] ?? '' ); $p = get_transient( self::CONFIRM_PREFIX . $id );
+        if ( ! is_array( $p ) || 'staging_order' !== $p['kind'] || ! hash_equals( (string) $p['token'], (string) ( $args['confirm_token'] ?? '' ) ) ) return [ 'error' => 'Invalid or expired order confirmation token.' ];
+        if ( ! function_exists( 'wc_create_order' ) ) return [ 'error' => 'WooCommerce order API is not available.' ];
+        $order = wc_create_order(); $product = wc_get_product( $p['product_id'] ); if ( ! $order || ! $product ) return [ 'error' => 'Order or product creation failed.' ];
+        $order->add_product( $product, $p['quantity'] ); foreach ( $p['billing'] as $key => $value ) { $setter = 'set_' . $key; if ( is_callable( [ $order, $setter ] ) ) $order->$setter( $value ); }
+        $order->set_payment_method( $p['payment_method'] ); $order->set_payment_method_title( 'cod' === $p['payment_method'] ? 'Cash on delivery' : 'Direct bank transfer' ); $order->calculate_totals(); $order->update_status( 'pending', 'CredoQ MCP staging audit order.' ); $order->add_order_note( 'AUDIT TEST — created by CredoQ MCP staging tool.' ); $order->save(); delete_transient( self::CONFIRM_PREFIX . $id ); self::audit( 'staging_order_created', [ 'order_id' => $order->get_id(), 'payment_method' => $p['payment_method'] ] ); return [ 'status' => 'created', 'order_id' => $order->get_id(), 'status_after_creation' => $order->get_status(), 'payment_method' => $p['payment_method'], 'captured' => false ];
     }
 
     private static function list_settings() {
