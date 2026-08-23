@@ -109,6 +109,7 @@ final class Credoq_MCP_Server {
             [ 'name' => 'credoq_list_audit_log', 'description' => 'Read paginated CredoQ and AI MCP activity from the CredoQ Audit Log.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'event' => [ 'type' => 'string' ], 'search' => [ 'type' => 'string' ], 'days' => [ 'type' => 'integer', 'minimum' => 1, 'maximum' => 365 ], 'per_page' => [ 'type' => 'integer', 'minimum' => 1, 'maximum' => 100 ], 'page' => [ 'type' => 'integer', 'minimum' => 1 ] ], 'additionalProperties' => false ] ],
             [ 'name' => 'credoq_preview_e2e_audit', 'description' => 'Preview a staging dry-run E2E audit dispatch; no workflow is started.', 'inputSchema' => [ 'type' => 'object', 'properties' => new stdClass(), 'additionalProperties' => false ] ],
             [ 'name' => 'credoq_dispatch_e2e_audit', 'description' => 'Dispatch the configured staging dry-run E2E audit only with explicit confirmation; deployment remains disabled.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'proposal_id' => [ 'type' => 'string' ], 'confirm_token' => [ 'type' => 'string' ], 'confirm' => [ 'type' => 'boolean' ] ], 'required' => [ 'proposal_id', 'confirm_token', 'confirm' ], 'additionalProperties' => false ] ],
+            [ 'name' => 'credoq_list_e2e_runs', 'description' => 'Read recent E2E GitHub workflow runs and their sanitized status.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'limit' => [ 'type' => 'integer', 'minimum' => 1, 'maximum' => 20 ] ], 'additionalProperties' => false ] ],
             [ 'name' => 'credoq_get_setting', 'description' => 'Read one allowlisted CredoQ setting without mutating WordPress.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'option' => [ 'type' => 'string' ] ], 'required' => [ 'option' ], 'additionalProperties' => false ] ],
             [ 'name' => 'credoq_preview_setting_update', 'description' => 'Preview a settings change and return a one-time confirmation token; no mutation occurs.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'option' => [ 'type' => 'string' ], 'value' => new stdClass() ], 'required' => [ 'option', 'value' ], 'additionalProperties' => false ] ],
             [ 'name' => 'credoq_apply_setting_update', 'description' => 'Apply a previously previewed settings change only with its one-time token and explicit confirm=true.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'proposal_id' => [ 'type' => 'string' ], 'confirm_token' => [ 'type' => 'string' ], 'confirm' => [ 'type' => 'boolean' ] ], 'required' => [ 'proposal_id', 'confirm_token', 'confirm' ], 'additionalProperties' => false ] ],
@@ -169,6 +170,10 @@ final class Credoq_MCP_Server {
                 break;
             case 'credoq_dispatch_e2e_audit':
                 $result = self::dispatch_e2e_audit( $args );
+                if ( isset( $result['error'] ) ) return self::rpc_error( $id, -32602, $result['error'] );
+                break;
+            case 'credoq_list_e2e_runs':
+                $result = self::list_e2e_runs( $args );
                 if ( isset( $result['error'] ) ) return self::rpc_error( $id, -32602, $result['error'] );
                 break;
             case 'credoq_get_setting':
@@ -395,6 +400,20 @@ final class Credoq_MCP_Server {
         $order = wc_create_order(); $product = wc_get_product( $p['product_id'] ); if ( ! $order || ! $product ) return [ 'error' => 'Order or product creation failed.' ];
         $order->add_product( $product, $p['quantity'] ); foreach ( $p['billing'] as $key => $value ) { $setter = 'set_' . $key; if ( is_callable( [ $order, $setter ] ) ) $order->$setter( $value ); }
         $order->set_payment_method( $p['payment_method'] ); $order->set_payment_method_title( 'cod' === $p['payment_method'] ? 'Cash on delivery' : 'Direct bank transfer' ); $order->calculate_totals(); $order->update_status( 'pending', 'CredoQ MCP staging audit order.' ); $order->add_order_note( 'AUDIT TEST — created by CredoQ MCP staging tool.' ); $order->save(); delete_transient( self::CONFIRM_PREFIX . $id ); self::audit( 'staging_order_created', [ 'order_id' => $order->get_id(), 'payment_method' => $p['payment_method'] ] ); return [ 'status' => 'created', 'order_id' => $order->get_id(), 'status_after_creation' => $order->get_status(), 'payment_method' => $p['payment_method'], 'captured' => false ];
+    }
+
+    private static function list_e2e_runs( $args ) {
+        $s = wp_parse_args( get_option( 'credoq_e2e_runner', [] ), [ 'repo' => '', 'workflow' => '', 'github_token' => '' ] );
+        if ( empty( $s['repo'] ) || empty( $s['workflow'] ) || empty( $s['github_token'] ) ) return [ 'error' => 'E2E runner is not fully configured on staging.' ];
+        $limit = max( 1, min( 20, absint( $args['limit'] ?? 10 ) ) );
+        $url = 'https://api.github.com/repos/' . implode( '/', array_map( 'rawurlencode', explode( '/', $s['repo'] ) ) ) . '/actions/workflows/' . rawurlencode( $s['workflow'] ) . '/runs?per_page=' . $limit;
+        $response = wp_remote_get( $url, [ 'timeout' => 20, 'headers' => [ 'Accept' => 'application/vnd.github+json', 'User-Agent' => 'CredoQ-MCP-E2E/0.1.7', 'Authorization' => 'Bearer ' . $s['github_token'], 'X-GitHub-Api-Version' => '2022-11-28' ] ] );
+        if ( is_wp_error( $response ) ) return [ 'error' => 'E2E status request failed.' ];
+        $code = (int) wp_remote_retrieve_response_code( $response ); $body = json_decode( wp_remote_retrieve_body( $response ), true );
+        if ( 200 !== $code || ! is_array( $body ) ) return [ 'error' => 'E2E status request returned HTTP ' . $code . '.' ];
+        $runs = [];
+        foreach ( (array) ( $body['workflow_runs'] ?? [] ) as $run ) $runs[] = [ 'id' => (int) ( $run['id'] ?? 0 ), 'name' => sanitize_text_field( $run['name'] ?? '' ), 'status' => sanitize_key( $run['status'] ?? '' ), 'conclusion' => sanitize_key( $run['conclusion'] ?? '' ), 'branch' => sanitize_text_field( $run['head_branch'] ?? '' ), 'event' => sanitize_key( $run['event'] ?? '' ), 'created_at' => sanitize_text_field( $run['created_at'] ?? '' ), 'updated_at' => sanitize_text_field( $run['updated_at'] ?? '' ), 'url' => esc_url_raw( $run['html_url'] ?? '' ) ];
+        return [ 'repo' => $s['repo'], 'workflow' => $s['workflow'], 'runs' => $runs ];
     }
 
     private static function preview_e2e_audit() {
