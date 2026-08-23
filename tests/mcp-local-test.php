@@ -45,7 +45,11 @@ assert_true( $unauth instanceof WP_Error && $unauth->get_error_code() === 'credo
 $init = rpc( [ 'jsonrpc' => '2.0', 'id' => 2, 'method' => 'initialize', 'params' => [] ] );
 assert_true( $init->get_status() === 200 && $init->get_data()['result']['serverInfo']['name'] === 'credoq-mcp-server', 'JSON-RPC initialize succeeds' );
 $list = rpc( [ 'jsonrpc' => '2.0', 'id' => 3, 'method' => 'tools/list', 'params' => [] ] );
-$names = array_column( $list->get_data()['result']['tools'], 'name' );
+$tool_list = json_decode( wp_json_encode( $list->get_data()['result']['tools'] ) );
+$names = array_map( function ( $tool ) { return $tool->name; }, $tool_list );
+foreach ( $tool_list as $tool ) {
+    assert_true( isset( $tool->inputSchema->properties ) && is_object( $tool->inputSchema->properties ), $tool->name . ' uses object-shaped JSON Schema properties' );
+}
 assert_true( in_array( 'credoq_list_settings', $names, true ) && in_array( 'credoq_apply_setting_update', $names, true ), 'settings tools are discoverable' );
 assert_true( in_array( 'credoq_list_bookings', $names, true ) && in_array( 'credoq_list_services', $names, true ) && in_array( 'credoq_list_seat_plans', $names, true ), 'booking, service, and seat tools are discoverable' );
 assert_true( in_array( 'credoq_propose_booking_update', $names, true ) && in_array( 'credoq_propose_service_update', $names, true ) && in_array( 'credoq_propose_seat_plan_update', $names, true ), 'management proposal tools are discoverable' );
