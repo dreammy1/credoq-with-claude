@@ -8,6 +8,11 @@ module.exports = async config => {
   const page = await context.newPage();
   const loginUrl = `${process.env.CREDOQ_TEST_URL.replace(/\/$/, '')}/wp-login.php`;
   await page.goto(loginUrl, { waitUntil: 'commit', timeout: 20000 });
+  const pageTitle = await page.title();
+  const pageBody = await page.locator('body').innerText().catch(() => '');
+  if (/bot verification|not a robot|captcha|challenge/i.test(`${pageTitle} ${pageBody}`)) {
+    throw new Error('Staging bot verification blocks headless CI. Allowlist the GitHub Actions runner or disable bot verification for the staging audit window, then rerun.');
+  }
   const username = page.locator('#user_login, input[name="log"]').first();
   const password = page.locator('#user_pass, input[name="pwd"]').first();
   await username.waitFor({ state: 'visible', timeout: 20000 });
