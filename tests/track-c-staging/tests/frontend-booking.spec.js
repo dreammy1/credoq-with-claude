@@ -7,7 +7,6 @@ const frontendPath = process.env.CREDOQ_FRONTEND_AUDIT_PATH;
 test.describe('Authenticated frontend form and booking audit', () => {
   test.beforeEach(async ({ page }) => {
     installDiagnostics(page);
-    await login(page);
   });
 
   test('published audit page renders without PHP/fatal errors', async ({ page }) => {

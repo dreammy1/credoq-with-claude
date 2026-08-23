@@ -7,7 +7,6 @@ const bookingApiPath = process.env.CREDOQ_BOOKING_API_PATH;
 test.describe('WooCommerce and membership-credit staging verification', () => {
   test.beforeEach(async ({ page }) => {
     installDiagnostics(page);
-    await login(page);
   });
 
   test('checkout exposes a non-capturing gateway and does not submit payment', async ({ page }) => {

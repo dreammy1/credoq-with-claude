@@ -13,6 +13,7 @@ if (/localhost|127\.0\.0\.1/i.test(process.env.CREDOQ_TEST_URL) && process.env.A
 }
 
 module.exports = defineConfig({
+  globalSetup: require.resolve('./global-setup.js'),
   testDir: './tests',
   fullyParallel: false,
   workers: 1,
@@ -27,6 +28,7 @@ module.exports = defineConfig({
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
     ignoreHTTPSErrors: false,
+    storageState: process.env.CREDOQ_STORAGE_STATE || '/tmp/credoq-staging-auth.json',
   },
   projects: [{ name: 'staging-chromium', use: { ...devices['Desktop Chrome'] } }],
   outputDir: 'audit-evidence/test-results',

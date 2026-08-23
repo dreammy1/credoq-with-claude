@@ -14,7 +14,6 @@ const adminPaths = (process.env.CREDOQ_ADMIN_PATHS || [
 test.describe('Authenticated WordPress admin and plugin inventory', () => {
   test.beforeEach(async ({ page }) => {
     installDiagnostics(page);
-    await login(page);
   });
 
   test('WordPress REST index exposes CredoQ namespaces and WooCommerce', async ({ page }) => {
