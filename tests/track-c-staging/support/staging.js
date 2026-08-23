@@ -21,17 +21,17 @@ function recordFixture(kind, name, id = null, cleanup = null) {
 }
 
 async function login(page) {
-  await page.goto('/wp-login.php', { waitUntil: 'domcontentloaded' });
+  await page.goto('/wp-login.php', { waitUntil: 'domcontentloaded', timeout: 20000 });
   await page.locator('#user_login').fill(process.env.CREDOQ_TEST_USER);
   const loginPassword = process.env.CREDOQ_TEST_LOGIN_PASSWORD || process.env.CREDOQ_TEST_APP_PASSWORD;
   await page.locator('#user_pass').fill(loginPassword);
   await page.locator('#wp-submit').click();
-  await expect(page).not.toHaveURL(/wp-login\.php/);
+  await expect(page).not.toHaveURL(/wp-login\.php/, { timeout: 20000 });
   recordObservation({ track: 'auth', status: 'authenticated', url: page.url() });
 }
 
 async function assertAdminPage(page, pageUrl, expectedText) {
-  const response = await page.goto(pageUrl, { waitUntil: 'networkidle' });
+  const response = await page.goto(pageUrl, { waitUntil: 'domcontentloaded', timeout: 20000 });
   expect(response && response.ok()).toBeTruthy();
   if (expectedText) await expect(page.getByText(expectedText, { exact: false }).first()).toBeVisible({ timeout: 15000 });
   recordObservation({ track: 'admin', page: pageUrl, status: 'loaded', httpStatus: response.status() });

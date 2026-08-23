@@ -11,7 +11,7 @@ test.describe('WooCommerce and membership-credit staging verification', () => {
   });
 
   test('checkout exposes a non-capturing gateway and does not submit payment', async ({ page }) => {
-    const response = await page.goto(checkoutPath, { waitUntil: 'networkidle' });
+    const response = await page.goto(checkoutPath, { waitUntil: 'domcontentloaded', timeout: 20000 });
     test.skip(!response || !response.ok(), `Checkout unavailable at ${checkoutPath}`);
     const body = await page.locator('body').innerText();
     const hasDirectBankTransfer = /direct bank transfer|bacs|bank transfer/i.test(body);
@@ -23,7 +23,7 @@ test.describe('WooCommerce and membership-credit staging verification', () => {
   });
 
   test('checkout order form exposes an order/booking correlation path', async ({ page }) => {
-    const response = await page.goto(checkoutPath, { waitUntil: 'networkidle' });
+    const response = await page.goto(checkoutPath, { waitUntil: 'domcontentloaded', timeout: 20000 });
     test.skip(!response || !response.ok(), `Checkout unavailable at ${checkoutPath}`);
     const correlationFields = await page.locator('input[name*="booking"], input[name*="credoq"], input[name*="order"], [data-booking-id], [data-credoq-booking]').count();
     recordObservation({ track: 'woocommerce', check: 'order_booking_correlation_field', correlationFields });
