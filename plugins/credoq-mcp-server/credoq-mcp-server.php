@@ -2,13 +2,15 @@
 /**
  * Plugin Name: CredoQ MCP Server
  * Description: Authenticated MCP endpoint for scoped AI management of CredoQ plugins.
- * Version: 0.1.2
+ * Version: 0.2.0
  * Requires at least: 6.0
  * Requires PHP: 7.4
  * Author: CredoQ
  */
 
 defined( 'ABSPATH' ) || exit;
+
+require_once __DIR__ . '/includes/Business_Automation.php';
 
 final class Credoq_MCP_Server {
     const NS = 'credoq-mcp/v1';
@@ -138,6 +140,11 @@ final class Credoq_MCP_Server {
             [ 'name' => 'credoq_create_staging_order', 'description' => 'Create a pending, non-capturing staging WooCommerce order only after preview token, confirm=true, and explicit staging-order enablement.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'proposal_id' => [ 'type' => 'string' ], 'confirm_token' => [ 'type' => 'string' ], 'confirm' => [ 'type' => 'boolean' ] ], 'required' => [ 'proposal_id', 'confirm_token', 'confirm' ], 'additionalProperties' => false ] ],
             [ 'name' => 'credoq_get_option', 'description' => 'Backward-compatible alias for credoq_get_setting.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'option' => [ 'type' => 'string' ] ], 'required' => [ 'option' ], 'additionalProperties' => false ] ],
             [ 'name' => 'credoq_propose_option_update', 'description' => 'Backward-compatible alias for credoq_preview_setting_update.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'option' => [ 'type' => 'string' ], 'value' => new stdClass() ], 'required' => [ 'option', 'value' ], 'additionalProperties' => false ] ],
+            [ 'name' => 'credoq_preview_provision', 'description' => 'Preview creation of a synthetic staging service, staff member, user, membership assignment, event, seat plan, form, page, or WooCommerce product link.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'resource' => [ 'type' => 'string', 'enum' => [ 'service', 'staff', 'user', 'membership', 'event', 'seat_plan', 'form', 'page', 'wc_product_link' ] ], 'data' => [ 'type' => 'object' ] ], 'required' => [ 'resource', 'data' ], 'additionalProperties' => false ] ],
+            [ 'name' => 'credoq_apply_provision', 'description' => 'Apply one approved synthetic staging provisioning proposal with a one-time token.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'proposal_id' => [ 'type' => 'string' ], 'confirm_token' => [ 'type' => 'string' ], 'confirm' => [ 'type' => 'boolean' ] ], 'required' => [ 'proposal_id', 'confirm_token', 'confirm' ], 'additionalProperties' => false ] ],
+            [ 'name' => 'credoq_preview_business_e2e', 'description' => 'Preview a complete synthetic staging business journey for appointments, events, memberships, seats, forms, or checkout.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'business_type' => [ 'type' => 'string', 'enum' => [ 'appointment', 'event', 'membership', 'seat', 'form', 'full' ] ], 'options' => [ 'type' => 'object' ] ], 'required' => [ 'business_type' ], 'additionalProperties' => false ] ],
+            [ 'name' => 'credoq_run_business_e2e', 'description' => 'Run an approved synthetic staging business journey and return a structured end-to-end report.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'proposal_id' => [ 'type' => 'string' ], 'confirm_token' => [ 'type' => 'string' ], 'confirm' => [ 'type' => 'boolean' ] ], 'required' => [ 'proposal_id', 'confirm_token', 'confirm' ], 'additionalProperties' => false ] ],
+            [ 'name' => 'credoq_verify_business_journey', 'description' => 'Read back all related submissions, bookings, seats, memberships, orders, notifications, settings, and audit evidence for a test correlation ID.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'correlation_id' => [ 'type' => 'string' ] ], 'required' => [ 'correlation_id' ], 'additionalProperties' => false ] ],
         ];
     }
 
@@ -285,6 +292,26 @@ final class Credoq_MCP_Server {
                 update_option( $proposal['option'], $proposal['value'], false );
                 delete_transient( self::CONFIRM_PREFIX . $proposal_id );
                 $result = [ 'status' => 'updated', 'proposal_id' => $proposal_id, 'option' => $proposal['option'], 'before' => self::redact_value( $proposal['option'], $before ), 'after' => self::redact_value( $proposal['option'], get_option( $proposal['option'], null ) ) ];
+                break;
+            case 'credoq_preview_provision':
+                $result = self::preview_provision( $args );
+                if ( isset( $result['error'] ) ) return self::rpc_error( $id, -32602, $result['error'] );
+                break;
+            case 'credoq_apply_provision':
+                $result = self::apply_provision( $args );
+                if ( isset( $result['error'] ) ) return self::rpc_error( $id, -32602, $result['error'] );
+                break;
+            case 'credoq_preview_business_e2e':
+                $result = self::preview_business_e2e( $args );
+                if ( isset( $result['error'] ) ) return self::rpc_error( $id, -32602, $result['error'] );
+                break;
+            case 'credoq_run_business_e2e':
+                $result = self::run_business_e2e( $args );
+                if ( isset( $result['error'] ) ) return self::rpc_error( $id, -32602, $result['error'] );
+                break;
+            case 'credoq_verify_business_journey':
+                $result = self::verify_business_journey( $args );
+                if ( isset( $result['error'] ) ) return self::rpc_error( $id, -32602, $result['error'] );
                 break;
             default:
                 return self::rpc_error( $id, -32602, 'Unknown or disabled tool.' );
@@ -494,6 +521,15 @@ final class Credoq_MCP_Server {
         $log[] = [ 'time' => gmdate( 'c' ), 'event' => $safe_event, 'data' => $safe_data, 'ip' => isset( $_SERVER['REMOTE_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) : '' ];
         update_option( self::AUDIT_OPTION, array_slice( $log, -200 ), false );
     }
+
+    private static function preview_provision( $args ) { return Credoq_MCP_Business_Automation::preview_provision( $args ); }
+    private static function apply_provision( $args ) { return Credoq_MCP_Business_Automation::apply_provision( $args ); }
+    private static function preview_business_e2e( $args ) { return Credoq_MCP_Business_Automation::preview_business_e2e( $args ); }
+    private static function run_business_e2e( $args ) { return Credoq_MCP_Business_Automation::run_business_e2e( $args ); }
+    private static function verify_business_journey( $args ) { return Credoq_MCP_Business_Automation::verify_business_journey( $args ); }
+
+    /** Internal bridge for the automation layer to preserve the existing audit contract. */
+    public static function business_audit( $event, $data ) { self::audit( $event, $data ); }
 
     public static function admin_menu() { add_submenu_page( 'credoq', 'CredoQ MCP', 'MCP Connection', 'manage_options', 'credoq-mcp', [ __CLASS__, 'render_admin' ] ); }
     public static function render_admin() {
