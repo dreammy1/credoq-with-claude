@@ -1,0 +1,12 @@
+{
+  "name": "credoq-authenticated-staging-audit",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "test": "playwright test",
+    "audit:local": "./run-local-audit.sh"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.47.0"
+  }
+}

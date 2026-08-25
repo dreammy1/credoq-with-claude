@@ -398,6 +398,36 @@ class Field_Event extends Field_Type {
     }
 
     /**
+     * Compute the authoritative event price used by the Engine submission
+     * total. The previous implementation inherited Field_Type::price_contribution()
+     * (0.0), so event registrations displayed a zero total even though
+     * on_submission() later stored a non-zero booking amount. Never trust the
+     * client-supplied `price`; use the event row and the Events↔Seats override.
+     */
+    public function price_contribution( $value, array $field_config, array $submission ) : float {
+        if ( '' === $value || ! class_exists( '\\CredoqEvents\\Event_Repository' ) ) return 0.0;
+        $selections = json_decode( (string) $value, true );
+        if ( ! is_array( $selections ) ) return 0.0;
+        if ( isset( $selections['event_id'] ) ) $selections = [ $selections ];
+
+        $overrides = $this->seat_overrides( $submission );
+        $total = 0.0;
+        foreach ( $selections as $sel ) {
+            $event_id = absint( $sel['event_id'] ?? 0 );
+            if ( ! $event_id ) continue;
+            $event = \CredoqEvents\Event_Repository::find( $event_id );
+            if ( ! $event ) continue;
+            if ( isset( $overrides[ $event_id ] ) ) {
+                $total += (float) ( $overrides[ $event_id ]['total'] ?? 0 );
+                continue;
+            }
+            $qty = max( 1, absint( $sel['quantity'] ?? 1 ) );
+            $total += (float) $event->price * $qty;
+        }
+        return $total;
+    }
+
+    /**
      * AUDIT-FIX (Total showed "Free" / no WC checkout redirect): Field_Event
      * previously had no wc_contribution() override, so the abstract
      * default (empty array) was used. Submission_Handler only adds items

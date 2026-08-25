@@ -116,6 +116,44 @@ jobs:
           mkdir -p audit-artifacts
           cp automation/credoq-audit.config.json audit-artifacts/
           printf 'This job is the safety boundary for live browser/admin audit execution.\n' > audit-artifacts/README.txt
+      - name: Install authenticated staging audit dependencies
+        working-directory: tests/track-c-staging
+        run: npm ci
+      - name: Install Chromium for authenticated staging audit
+        working-directory: tests/track-c-staging
+        run: npx playwright install --with-deps chromium
+      - name: Run authenticated WordPress/WooCommerce staging tracks
+        working-directory: tests/track-c-staging
+        env:
+          CREDOQ_TEST_URL: ${{ secrets.CREDOQ_TEST_URL }}
+          CREDOQ_TEST_USER: ${{ secrets.CREDOQ_TEST_USER }}
+          CREDOQ_TEST_APP_PASSWORD: ${{ secrets.CREDOQ_TEST_APP_PASSWORD }}
+          CREDOQ_TEST_LOGIN_PASSWORD: ${{ secrets.CREDOQ_TEST_LOGIN_PASSWORD }}
+          CREDOQ_REQUIRE_ADMIN_BROWSER: 'true'
+          CREDOQ_AUDIT_PREFIX: AUDIT TEST
+          CREDOQ_FRONTEND_AUDIT_PATH: ${{ secrets.CREDOQ_FRONTEND_AUDIT_PATH }}
+          CREDOQ_CHECKOUT_PATH: ${{ secrets.CREDOQ_CHECKOUT_PATH }}
+          CREDOQ_BOOKING_API_PATH: ${{ secrets.CREDOQ_BOOKING_API_PATH }}
+          CREDOQ_MEMBERSHIP_API_PATH: ${{ secrets.CREDOQ_MEMBERSHIP_API_PATH }}
+          CREDOQ_NOTIFICATION_STATUS_PATH: ${{ secrets.CREDOQ_NOTIFICATION_STATUS_PATH }}
+          CREDOQ_TEST_MAILBOX: ${{ secrets.CREDOQ_TEST_MAILBOX }}
+          CREDOQ_REQUIRE_NOTIFICATION_VERIFICATION: 'false'
+          CREDOQ_ENABLE_CLEANUP: 'false'
+        run: npx playwright test
+      - name: Upload authenticated staging evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: credoq-authenticated-staging-audit-${{ github.sha }}
+          path: tests/track-c-staging/audit-evidence/
+          retention-days: 30
+      - name: Upload authenticated staging HTML report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: credoq-authenticated-staging-report-${{ github.sha }}
+          path: tests/track-c-staging/playwright-report/
+          retention-days: 30
       - name: Upload audit contract
         uses: actions/upload-artifact@v4
         with:
