@@ -152,7 +152,7 @@ class Appointments_Bridge {
 		$apt_title = (string) $row->appointment_id;
 		if ( class_exists( '\CredoqAppointments\Appointment_Repository' ) ) {
 			$apt = \CredoqAppointments\Appointment_Repository::find( (int) $row->appointment_id );
-			if ( $apt ) $apt_title = $apt->title;
+			if ( $apt ) $apt_title = isset( $apt->title ) ? (string) $apt->title : ( isset( $apt->name ) ? (string) $apt->name : ( 'Appointment #' . (int) $row->appointment_id ) );
 		}
 		$who  = $row->guest_email ?: ( $row->user_id ? ( get_userdata( $row->user_id )->user_email ?? '' ) : __( 'Guest', 'credoq-seats' ) );
 		$when = trim( ( $row->selected_date ?? '' ) . ' ' . ( $row->selected_time ?? '' ) );

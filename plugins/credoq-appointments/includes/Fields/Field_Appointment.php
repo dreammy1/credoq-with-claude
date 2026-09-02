@@ -168,4 +168,69 @@ class Field_Appointment extends Field_Type {
 		}
 		return 0.0;
 	}
+
+	/**
+	 * Create the booking record in wp_credoq_bookings after submission.
+	 * AUDIT-FIX (Gap in Forms Builder): without this, generic forms with
+	 * an appointment field never actually reserved the slot.
+	 */
+	public function on_submission( int $submission_id, $value, array $field_config, array $submission_payload ) {
+		if ( '' === $value ) return true;
+		$decoded = json_decode( $value, true );
+		if ( ! is_array( $decoded ) || empty( $decoded['service_id'] ) ) return true;
+
+		if ( ! class_exists( '\\CredoqAppointments\\Booking_Service' ) ) {
+			return new \WP_Error( 'appointments_missing', __( 'Appointments plugin is not active.', 'credoq-appointments' ) );
+		}
+
+		$user_id     = get_current_user_id();
+		$guest_name  = (string) ( $submission_payload['name']  ?? $submission_payload['full_name'] ?? '' );
+		$guest_email = (string) ( $submission_payload['email'] ?? '' );
+
+		// Decide status: if the form has a WC product or payment field,
+		// it might stay pending. For now, mimic direct booking logic.
+		$status = 'confirmed'; 
+
+		$booking_id = \CredoqAppointments\Booking_Repository::insert( [
+			'appointment_id' => absint( $decoded['service_id'] ),
+			'staff_id'       => absint( $decoded['staff_id'] ?? 0 ),
+			'user_id'        => $user_id,
+			'guest_name'     => sanitize_text_field( $guest_name ),
+			'guest_email'    => sanitize_email( $guest_email ),
+			'selected_date'  => sanitize_text_field( $decoded['date'] ),
+			'selected_time'  => sanitize_text_field( $decoded['time_slot'] ),
+			'status'         => $status,
+			'submission_id'  => $submission_id,
+			'total_price'    => $this->price_contribution( $value, $field_config, $submission_payload ),
+		] );
+
+		if ( ! $booking_id ) {
+			return new \WP_Error( 'booking_failed', __( 'Could not create appointment record.', 'credoq-appointments' ) );
+		}
+
+		if ( 'confirmed' === $status ) {
+			do_action( 'credoq_booking_confirmed', $booking_id );
+		}
+
+		return [ 'appointment_booking_id' => $booking_id ];
+	}
+
+	/**
+	 * Cancel the appointment booking if the submission is cancelled.
+	 */
+	public function on_cancellation( int $submission_id, array $context ) : void {
+		global $wpdb;
+		$table = $wpdb->prefix . 'credoq_bookings';
+		$ids   = $wpdb->get_col( $wpdb->prepare(
+			"SELECT id FROM {$table} WHERE submission_id = %d AND status != 'cancelled'",
+			$submission_id
+		) );
+
+		if ( ! empty( $ids ) && class_exists( '\\CredoqAppointments\\Booking_Service' ) ) {
+			$refund_credits = ! empty( $context['refund_credits'] );
+			foreach ( $ids as $id ) {
+				\CredoqAppointments\Booking_Service::cancel( (int) $id, $refund_credits );
+			}
+		}
+	}
 }

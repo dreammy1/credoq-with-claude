@@ -106,6 +106,18 @@ class Slot_Generator {
             $booked_map[ $b->selected_time ] = intval( $b->count );
         }
 
+        // AUDIT-FIX (Concurrency): also block slots where staff has an Event.
+        $staff_event_windows = [];
+        if ( $staff_id > 0 && class_exists( '\CredoqEvents\Event_Repository' ) ) {
+            $events = \CredoqEvents\Event_Repository::find_for_staff_on_date( $staff_id, $date );
+            foreach ( $events as $ev ) {
+                $staff_event_windows[] = [
+                    'start' => strtotime( $ev->start_datetime ),
+                    'end'   => strtotime( $ev->end_datetime ),
+                ];
+            }
+        }
+
         // ── Visual Seats: capacity is the seat plan's own seat count, not
         //    the generic max_bookings row counter (one "booking" can hold
         //    several seats at once, so counting rows badly under-restricts
@@ -122,10 +134,13 @@ class Slot_Generator {
 
         // ── Min lead-time: earliest bookable slot ─────────────────────
         // FIX-SG-5: enforce minimum minutes notice before a slot opens.
+        // AUDIT-FIX (Timezone Stress): lead-time must apply to ALL slots,
+        // not just today. And 'today' check must use site time.
         $min_lead_minutes = intval( $bk_settings['min_lead_time'] ?? 0 );
         $earliest_ts      = time() + max( 300, $min_lead_minutes * 60 );
-        // AUDIT-FIX C-3: time() is correct; 300 = 5-min buffer when no rule set.
-        $is_today         = ( $date === date( 'Y-m-d' ) );
+        $today            = current_time( 'Y-m-d' );
+
+        if ( $date < $today ) return []; // Hard block past dates.
 
         // ── Generate slots ────────────────────────────────────────────
         $slots = [];
@@ -139,9 +154,8 @@ class Slot_Generator {
             while ( ( $cur + $duration * 60 ) <= $end ) {
                 $time_key = date( 'H:i', $cur );
 
-                // Skip slots that fail lead-time check (today only for speed,
-                // but also applies to future dates if min_lead > 0).
-                if ( $is_today && $cur < $earliest_ts ) {
+                // Skip slots that fail lead-time check.
+                if ( $cur < $earliest_ts ) {
                     $cur += $interval * 60;
                     continue;
                 }
@@ -156,6 +170,20 @@ class Slot_Generator {
                 }
                 $remaining = max( 0, $slot_cap - $booked );
                 $available = $remaining > 0;
+
+                // AUDIT-FIX (Concurrency): apply the event overlap check.
+                if ( $available && ! empty( $staff_event_windows ) ) {
+                    $slot_start = $cur;
+                    $slot_end   = $cur + $duration * 60;
+                    foreach ( $staff_event_windows as $busy ) {
+                        if ( $slot_start < $busy['end'] && $slot_end > $busy['start'] ) {
+                            $available = false;
+                            $booked    = $slot_cap;
+                            $remaining = 0;
+                            break;
+                        }
+                    }
+                }
 
                 $slot = [
                     'time'      => $time_key,

@@ -13,6 +13,7 @@ plugins=(
   credoq-events-v3
   credoq-seats
   credoq-membership-v3
+  credoq-mcp-server
 )
 
 for plugin in "${plugins[@]}"; do

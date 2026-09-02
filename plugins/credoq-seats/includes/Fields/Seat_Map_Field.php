@@ -104,8 +104,30 @@ class Seat_Map_Field extends Field_Type {
 		);
 	}
 
+	/**
+	 * Return the authoritative seat total used by the Engine subtotal.
+	 * Never trust the browser's `total`: the browser only supplies seat IDs;
+	 * the plan, seat type overrides, and connected event price are resolved
+	 * server-side in Booking_Repository::calc_seats_total().
+	 */
 	public function price_contribution( $value, array $field_config, array $submission ) : float {
-		return is_array( $value ) ? (float) ( $value['total'] ?? 0 ) : 0.0;
+		if ( ! is_array( $value ) ) return 0.0;
+		$seat_ids = $this->decode_seats( $value );
+		if ( empty( $seat_ids ) ) return 0.0;
+
+		$plan_id = absint( $value['plan_id'] ?? $field_config['seat_plan_id'] ?? 0 );
+		$event_id = absint( $field_config['event_id'] ?? 0 );
+		if ( ! $event_id ) $event_id = self::resolve_event_id_from_payload( $submission );
+		if ( ! $plan_id && $event_id ) $plan_id = self::resolve_plan_id_for_event( $event_id );
+		if ( ! $plan_id ) return 0.0;
+
+		$base_price = 0.0;
+		if ( $event_id && class_exists( '\\CredoqEvents\\Event_Repository' ) ) {
+			$event = \CredoqEvents\Event_Repository::find( $event_id );
+			if ( $event ) $base_price = (float) $event->price;
+		}
+		$calc = Booking_Repository::calc_seats_total( $plan_id, $seat_ids, $base_price );
+		return (float) ( $calc['total'] ?? 0 );
 	}
 
 	public function on_submission( int $submission_id, $value, array $field_config, array $submission_payload ) {
