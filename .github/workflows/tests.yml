@@ -2,9 +2,9 @@ name: Credoq Suite — Test Suite
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, audit-fix-and-test-expansion ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, audit-fix-and-test-expansion ]
   workflow_dispatch: {}
 
 jobs:
