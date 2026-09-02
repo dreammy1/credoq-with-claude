@@ -28,6 +28,22 @@ class Event_Service {
         $event = Event_Repository::find( $event_id );
         if ( ! $event ) return false;
 
+        // AUDIT-FIX (Concurrency): check if staff is busy with an Appointment.
+        if ( $event->staff_id > 0 && class_exists( '\CredoqAppointments\Booking_Repository' ) ) {
+            $appointments = \CredoqAppointments\Booking_Repository::find_for_staff_in_range(
+                (int) $event->staff_id, $event->start_datetime, $event->end_datetime
+            );
+            $ev_start = strtotime( $event->start_datetime );
+            $ev_end   = strtotime( $event->end_datetime );
+            $date     = substr( $event->start_datetime, 0, 10 );
+
+            foreach ( $appointments as $apt ) {
+                $apt_start = strtotime( $date . ' ' . $apt->selected_time );
+                $apt_end   = $apt_start + (int) $apt->duration * 60;
+                if ( $ev_start < $apt_end && $ev_end > $apt_start ) return false;
+            }
+        }
+
         $event_cap = (int) $event->capacity; // 0 = unlimited
         $seat_cap  = self::seat_plan_capacity( $event_id );
 
@@ -180,10 +196,13 @@ class Event_Service {
 
         // Credit deduction
         if ( ! $use_wc && $plan_id > 0 && $user_id && $event->credit_deduct_enabled && class_exists('\CredoqMembership\Membership_Service') ) {
+            $deduct_amt = intval($event->credit_deduct_amount) * $qty;
             \CredoqMembership\Membership_Service::deduct_credit(
-                $user_id, $plan_id, intval($event->credit_deduct_amount) * $qty,
-                'Event: '.$event->title, $event_id
+                $user_id, $plan_id, $deduct_amt,
+                'Event: '.$event->title, $id
             );
+            // Record how many credits were deducted in the booking row itself.
+            Event_Booking_Repository::update_status($id, $init_st, ['credit_deducted' => $deduct_amt]);
         }
 
         if ( ! $use_wc ) {
@@ -205,6 +224,25 @@ class Event_Service {
         $b = Event_Booking_Repository::find($booking_id);
         if ( ! $b ) return false;
         Event_Booking_Repository::update_status($booking_id, 'cancelled');
+
+        // Refund membership credits if any were deducted.
+        if ( (int) $b->credit_deducted > 0 && class_exists( '\CredoqMembership\Membership_Service' ) ) {
+            global $wpdb;
+            $ledger_table = $wpdb->prefix . 'credoq_credit_ledger';
+            $entry = $wpdb->get_row( $wpdb->prepare(
+                "SELECT * FROM {$ledger_table} WHERE ref_id = %d AND type = 'use' LIMIT 1",
+                $booking_id
+            ) );
+            if ( $entry ) {
+                \CredoqMembership\Membership_Service::refund_credit(
+                    (int) $b->user_id,
+                    (int) $entry->plan_id,
+                    (int) $b->credit_deducted,
+                    'Refund: ' . $b->guest_name,
+                    $booking_id
+                );
+            }
+        }
 
         // AUDIT-FEATURE: release any seats reserved through register()'s
         // seat-map integration above — see the 'event_legacy' booking_type
