@@ -141,7 +141,6 @@ final class Credoq_MCP_Server {
     private static function tools() {
         return [
             [ 'name' => 'credoq_system_status', 'description' => 'Read WordPress, WooCommerce, PHP, and CredoQ plugin status.', 'inputSchema' => [ 'type' => 'object', 'properties' => new stdClass() ] ],
-            [ 'name' => 'credoq_plugin_inventory', 'description' => 'List installed CredoQ plugins, versions, active state, and declared admin surfaces.', 'inputSchema' => [ 'type' => 'object', 'properties' => new stdClass() ] ],
         ];
     }
 
