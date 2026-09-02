@@ -29,6 +29,10 @@ final class Plugin {
 		// Inject credit info into React widget config.
 		add_filter( 'credoq_widget_config', [ __CLASS__, 'inject_widget_config' ], 10, 2 );
 
+		// AUDIT-FEATURE: content restriction enforcement (see Restriction_Gate
+		// docblock — this closes a previously-dead settings gap).
+		Restriction_Gate::register();
+
 		// Admin: require page files + register menu (submenu + sidebar items).
 		if ( is_admin() ) {
 			require_once CREDOQ_MEMBERSHIP_DIR . 'includes/Admin/Plans_Page.php';

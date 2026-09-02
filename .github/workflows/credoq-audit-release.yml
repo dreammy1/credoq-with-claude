@@ -1,0 +1,180 @@
+name: CredoQ AI Change, Audit, and Release
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      run_live_audit:
+        description: 'Run the labeled live-site audit against the configured test site'
+        required: true
+        default: false
+        type: boolean
+      deploy_production:
+        description: 'Prepare a production deployment; protected environment approval is still required'
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: credoq-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  static-and-integration-tests:
+    name: PHP lint, cross-plugin harness, and real WordPress admin tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: sqlite3
+          coverage: none
+      - name: PHP lint every plugin file
+        run: find plugins -name '*.php' -print0 | xargs -0 -n1 -P4 php -l
+      - name: Run cross-plugin harness
+        env:
+          CREDOQ_PLUGINS_DIR: ${{ github.workspace }}/plugins
+        run: ./run-all.sh
+      - name: Run real WordPress admin-settings track
+        run: |
+          chmod +x tests/track-a-admin-settings/setup-wordpress.sh tests/track-a-admin-settings/run-track-a.sh
+          tests/track-a-admin-settings/setup-wordpress.sh /tmp/wpsite "${{ github.workspace }}/plugins"
+          WPSITE=/tmp/wpsite tests/track-a-admin-settings/run-track-a.sh
+
+  widget-e2e:
+    name: Playwright widget E2E
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install dependencies
+        working-directory: tests/track-b-e2e
+        run: npm ci
+      - name: Install Chromium
+        working-directory: tests/track-b-e2e
+        run: npx playwright install --with-deps chromium
+      - name: Run widget tests
+        working-directory: tests/track-b-e2e
+        run: npx playwright test
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: credoq-playwright-report
+          path: tests/track-b-e2e/playwright-report/
+          retention-days: 14
+
+  package:
+    name: Build signed plugin artifacts
+    needs: [static-and-integration-tests, widget-e2e]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Package suite
+        run: automation/package-suite.sh artifacts
+      - name: Upload installable ZIPs and checksums
+        uses: actions/upload-artifact@v4
+        with:
+          name: credoq-suite-${{ github.sha }}
+          path: artifacts/
+          retention-days: 30
+
+  live-audit:
+    name: Labeled live audit (manual opt-in)
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_live_audit }}
+    needs: package
+    runs-on: ubuntu-latest
+    environment: staging-audit
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate required audit inputs
+        env:
+          SITE_URL: ${{ secrets.CREDOQ_TEST_URL }}
+          TEST_USER: ${{ secrets.CREDOQ_TEST_USER }}
+          TEST_PASSWORD: ${{ secrets.CREDOQ_TEST_APP_PASSWORD }}
+        run: |
+          test -n "$SITE_URL"
+          test -n "$TEST_USER"
+          test -n "$TEST_PASSWORD"
+          case "$SITE_URL" in *localhost*|*127.0.0.1*) ;; *) echo "Live audit URL accepted: $SITE_URL";; esac
+      - name: Publish audit contract
+        run: |
+          mkdir -p audit-artifacts
+          cp automation/credoq-audit.config.json audit-artifacts/
+          printf 'This job is the safety boundary for live browser/admin audit execution.\n' > audit-artifacts/README.txt
+      - name: Install authenticated staging audit dependencies
+        working-directory: tests/track-c-staging
+        run: npm ci
+      - name: Install Chromium for authenticated staging audit
+        working-directory: tests/track-c-staging
+        run: npx playwright install --with-deps chromium
+      - name: Run authenticated WordPress/WooCommerce staging tracks
+        working-directory: tests/track-c-staging
+        env:
+          CREDOQ_TEST_URL: ${{ secrets.CREDOQ_TEST_URL }}
+          CREDOQ_TEST_USER: ${{ secrets.CREDOQ_TEST_USER }}
+          CREDOQ_TEST_APP_PASSWORD: ${{ secrets.CREDOQ_TEST_APP_PASSWORD }}
+          CREDOQ_TEST_LOGIN_PASSWORD: ${{ secrets.CREDOQ_TEST_LOGIN_PASSWORD }}
+          CREDOQ_REQUIRE_ADMIN_BROWSER: 'true'
+          CREDOQ_AUDIT_PREFIX: AUDIT TEST
+          CREDOQ_FRONTEND_AUDIT_PATH: ${{ secrets.CREDOQ_FRONTEND_AUDIT_PATH }}
+          CREDOQ_CHECKOUT_PATH: ${{ secrets.CREDOQ_CHECKOUT_PATH }}
+          CREDOQ_BOOKING_API_PATH: ${{ secrets.CREDOQ_BOOKING_API_PATH }}
+          CREDOQ_MEMBERSHIP_API_PATH: ${{ secrets.CREDOQ_MEMBERSHIP_API_PATH }}
+          CREDOQ_NOTIFICATION_STATUS_PATH: ${{ secrets.CREDOQ_NOTIFICATION_STATUS_PATH }}
+          CREDOQ_TEST_MAILBOX: ${{ secrets.CREDOQ_TEST_MAILBOX }}
+          CREDOQ_REQUIRE_NOTIFICATION_VERIFICATION: 'false'
+          CREDOQ_ENABLE_CLEANUP: 'false'
+        run: npx playwright test
+      - name: Upload authenticated staging evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: credoq-authenticated-staging-audit-${{ github.sha }}
+          path: tests/track-c-staging/audit-evidence/
+          retention-days: 30
+      - name: Upload authenticated staging HTML report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: credoq-authenticated-staging-report-${{ github.sha }}
+          path: tests/track-c-staging/playwright-report/
+          retention-days: 30
+      - name: Upload audit contract
+        uses: actions/upload-artifact@v4
+        with:
+          name: credoq-live-audit-contract-${{ github.sha }}
+          path: audit-artifacts/
+          retention-days: 30
+
+  production-deploy:
+    name: Production deployment (protected approval required)
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.deploy_production }}
+    needs: [package, live-audit]
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Stop unless an explicit deployment adapter is configured
+        run: |
+          echo 'Production deployment is intentionally not implemented until a staging audit and rollback adapter are configured.'
+          echo 'Use a protected environment reviewer and add an approved wp-cli/SSH or MCP deployment adapter before enabling this job.'
+          exit 1

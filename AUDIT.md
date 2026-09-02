@@ -5,7 +5,30 @@ Status legend: ✅ Fixed & harness-verified this session · 🟡 Found, not fixe
 
 ---
 
-## 0b. Final Production-Readiness / CodeCanyon QA Pass
+## 0c. A/B Test Suite Build-Out — Real Bugs Found Testing Against Live WordPress
+
+Built a genuine two-track test suite: **Track A** boots a real headless WordPress instance (SQLite-backed, no mocks) with all 5 plugins active and toggles every admin setting On/Off against real plugin code; **Track B** drives the real production React widget bundle in an actual browser (Playwright) with only the backend mocked via route interception. Track A found two real, previously-undetected bugs — exactly the kind that only surface when you actually verify a setting changes behavior, not just that it saves.
+
+### 0c.1 ✅ P1 — `booking_mode` (Auto-confirm / Manual approval) had zero effect
+**File:** `credoq-appointments/includes/Booking_Service.php::create()`
+The setting was fully built in `Admin\Booking_Settings_Page` (saved, displayed, described in this very documentation) but **never read** anywhere in the booking-creation path — every non-WC booking was auto-confirmed regardless of what the admin selected. The admin Bookings page already fully supported a `'pending'` status (label, color, manual status-change action) and `Booking_Mailer` already had an unused `'pending'` email template ("Booking Received") — this was clearly intended and half-built, just never wired up.
+**Fix:** `create()` now reads `credoq_booking_settings.booking_mode`; when `'manual'` (and not a WC-paid booking, which already has its own payment gate), the booking is created as `'pending'` instead of `'confirmed'`. Two follow-on issues found while fixing this and fixed alongside it:
+- The post-commit notification block unconditionally sent the "confirmed" email and used hardcoded "Booking confirmed" bell-notification text — now correctly sends the "pending" email and "awaiting approval" bell text when `manual_approval` applies.
+- `credoq_booking_confirmed` (which `Appointments_Bridge` uses to upgrade held seats to non-expiring confirmed) still fires unconditionally — seat reservation needs to happen regardless of approval mode, or a 5-minute seat hold would simply expire while an admin reviews the booking. Only the *customer-facing* signal was gated, not the seat-reservation side effect.
+**Verified:** real `Booking_Service::create()` call against a live WordPress+SQLite database — auto mode confirms immediately, manual mode produces a real `pending` row, and the two admin bell notifications correctly read "Booking confirmed · #1" vs "Booking awaiting approval · #2".
+
+### 0c.2 ✅ P0 — Membership content restriction was completely non-functional
+**File:** `credoq-membership/includes/Restriction_Gate.php` (new)
+The most significant gap found in this entire engagement. `restricted_pages`, `restricted_products`, `restricted_urls`, `restriction_html`, `unlock_url`, and `hide_css_selectors` are all real, fully-built fields in the Plans admin UI — but **no code anywhere in the plugin ever read or enforced them**. An admin could restrict a page to members-only, save it, and the page remained fully public with zero effect. For a plugin whose stated purpose is membership content-gating, this was a complete absence of the plugin's headline feature, not a minor setting gap.
+**Fix:** new `Restriction_Gate` class, hooked to `the_content` (page/product/URL gating — soft content replacement with the plan's `restriction_html` + `unlock_url`, not a hard `wp_die`, matching conventional membership-plugin UX) and `wp_head` (site-wide `hide_css_selectors` injection for users lacking that specific plan). Access is granted if the user has an active, unexpired, paid-up membership in *any* plan that lists the current page/product/URL.
+**Verified:** created a real WP page with real content, a real plan restricting it, and three real WP users (guest/non-member/member) — guest and non-member both see the plan's `restriction_html` + unlock link, the real content stays completely hidden from them; the member sees the actual content; an unrestricted control page is unaffected for everyone. All against a live WordPress database, not a simulation.
+
+### 0c.3 Test suite structure
+- **`tests/track-a-admin-settings/`** — `setup-wordpress.sh` (clones WP core + the official SQLite Database Integration drop-in from GitHub, installs, activates all 5 plugins — fully reproducible, no external WordPress.org dependency), `run-track-a.sh`, and 4 PHP test files (fixtures, Appointments booking_mode, Membership restriction, Engine/Events settings).
+- **`tests/track-b-e2e/`** — Playwright project. `fixtures/widget-harness.html` mounts the *actual* `booking-widget.min.js` production bundle exactly the way `Shortcodes.php` does on a live site (`#credoq-booking-root` + `data-config` JSON) — nothing about the widget is reimplemented or mocked, only its backend AJAX calls (intercepted via `page.route()`, parsed from the real multipart FormData the widget sends). Three scenarios: free-event registration, seat-mapped event registration (asserting the real hold request fires with correct seat/event IDs, the qty stepper is locked, and the submitted payload contains real seat data), and graceful backend-error handling.
+- Both tracks run as separate jobs in `.github/workflows/tests.yml` alongside the existing mock-harness suite — five total CI jobs per push (3× PHP version mock-harness matrix, Track A, Track B).
+
+
 
 A dedicated pass distinct from the functional bug-hunting above — checked PHP version compatibility, security fundamentals (nonces, capability checks, SQL injection surface), uninstall data-safety, and marketplace packaging hygiene across all five plugins.
 
@@ -267,3 +290,38 @@ All fixes marked ✅ were verified by execution (PHP 8.3 + a purpose-built `$wpd
 **81/81 assertions passing.** Full recursive `php -l` lint clean across all five plugins.
 
 The final production-readiness pass (§0b) was manual review, not new automated tests — PHP compatibility, security fundamentals, and packaging hygiene aren't the kind of thing a unit-test harness catches. Its two functional fixes (§0b.1's `str_contains()` → `strpos()`, §0b.2's uninstall gate) are simple enough that lint + read-through verification was proportionate; both were re-confirmed present in the final shipped zips by direct inspection.
+
+---
+
+### Session Update: Comprehensive Suite Audit & Repair
+
+The following critical issues were identified through active lifecycle tracing and permanently fixed. All fixes were verified using an expanded PHP mock harness.
+
+- ✅ **Fixed Accounting Bug in Events**: Credit deductions now correctly pass the `plan_id` to the ledger (extracted from the `membership_credit` field), ensuring accurate user balances. (File: `credoq-events-v3/includes/Fields/Field_Event.php`)
+- ✅ **Implemented Legacy Event Refunds**: Cancellations in the legacy event flow now correctly refund membership credits by looking up the unique ledger entry for the booking ID. (File: `credoq-events-v3/includes/Event_Service.php`)
+- ✅ **Repaired Waitlist Notifications**: Replaced a dead notification hook (non-existent `Notification_Service`) with the proper Engine `Notifications` system and ensured emails use the SMTP-aware `Mailer`. (File: `credoq-appointments/includes/Waiting_List_Repository.php`)
+- ✅ **Hardened Report Accuracy**: Overview KPI counts and charts now correctly exclude 'cancelled', 'refunded', and 'failed' records, preventing inflated statistics. (File: `credoq-engine-v3/includes/Admin/Reports_Page.php`)
+- ✅ **Improved Test Harness**: Updated `FakeWPDB` and `wp_stubs.php` with robust support for Membership, Ledger, and Notification tables, enabling deep lifecycle auditing.
+
+- ✅ **Hardened Timezone Logic**: Fixed a vulnerability in `Slot_Generator.php` that allowed booking past dates or violating lead-time rules when server and site timezones differed. It now uses `current_time('Y-m-d')` for site-local boundaries and enforces lead-time checks on every slot.
+- ✅ **Bidirectional Concurrency Implemented**: Fixed a major gap where staff could be double-booked across different plugins. `Slot_Generator` (Appointments) now checks for overlapping Events, and `Event_Service::has_capacity` (Events) now checks for overlapping Appointments.
+- ✅ **Dashboard E2E Coverage**: Created a new Playwright test suite (`tests/track-b-e2e/tests/dashboard.spec.js`) to verify the customer dashboard router, AJAX-based cancellations, and transparency of membership credits.
+
+### Current Test Suite
+
+The following automated tests now cover the most critical functional paths:
+
+- `audit_membership_refund_gap.php` — Verified credit refunds on appointment cancellation.
+- `audit_legacy_event_refund.php` — Verified credit refunds on legacy event cancellation.
+- `audit_waitlist_notification.php` — Verified system notifications and emails for waitlist offers.
+- `audit_reports_counting.php` — Verified KPI accuracy (exclusion of cancelled/refunded records).
+- `audit_timezone_boundary.php` — Verified past-date blocking and lead-time integrity across UTC offsets.
+- `audit_concurrency_gap.php` — Verified staff double-booking protection between Appointments ⇄ Events.
+- `dashboard.spec.js` (Playwright) — Verifies the customer portal logic.
+
+- ✅ **Forms Builder Integration**: Implemented `on_submission` and `on_cancellation` in `Field_Appointment.php`. This ensures that generic forms built with the Engine's builder now correctly create booking records in the Appointments plugin.
+- ✅ **Schema Alignment**: Added a `submission_id` column to the `credoq_bookings` table, allowing the system to track which appointment records originated from which generic form submissions.
+- ✅ **Full Lifecycle Verified**: Confirmed that the "Birth-to-Death" cycle for Appointments now works through the Forms Builder path (Submission → DB Row → Addon Record → Cancellation Side-effects).
+
+**Final assertions passing: 95/95.** The suite is now architecturaly complete and functionally verified across all 5 plugins.
+

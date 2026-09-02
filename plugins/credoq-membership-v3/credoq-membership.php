@@ -3,7 +3,7 @@
  * Plugin Name: Credoq Membership
  * Plugin URI:  https://credoq.com
  * Description: Membership addon for Credoq Engine. Adds plans, credits, and content restriction.
- * Version:     1.0.2
+ * Version:     1.0.3
  * Author:      Credoq
  * Author URI:  https://credoq.com
  * Text Domain: credoq-membership
@@ -18,7 +18,7 @@ namespace CredoqMembership;
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'CREDOQ_MEMBERSHIP_VERSION', '1.0.2' );
+define( 'CREDOQ_MEMBERSHIP_VERSION', '1.0.3' );
 define( 'CREDOQ_MEMBERSHIP_FILE',    __FILE__ );
 define( 'CREDOQ_MEMBERSHIP_DIR',     plugin_dir_path( __FILE__ ) );
 define( 'CREDOQ_MEMBERSHIP_URL',     plugin_dir_url( __FILE__ ) );
@@ -27,6 +27,7 @@ define( 'CREDOQ_MEMBERSHIP_URL',     plugin_dir_url( __FILE__ ) );
 require_once CREDOQ_MEMBERSHIP_DIR . 'includes/Schema.php';
 require_once CREDOQ_MEMBERSHIP_DIR . 'includes/Plan_Repository.php';
 require_once CREDOQ_MEMBERSHIP_DIR . 'includes/Membership_Service.php';
+require_once CREDOQ_MEMBERSHIP_DIR . 'includes/Restriction_Gate.php';
 require_once CREDOQ_MEMBERSHIP_DIR . 'includes/Field_Slot_Credit.php';
 require_once CREDOQ_MEMBERSHIP_DIR . 'includes/Plugin.php';   // ← \CredoqMembership\Plugin
 

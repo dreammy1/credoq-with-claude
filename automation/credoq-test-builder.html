@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Credoq Test Case Builder</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; line-height: 1.5; color: #1e293b; max-width: 900px; margin: 40px auto; padding: 0 20px; background: #f8fafc; }
+        h1 { color: #4f46e5; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; }
+        .plugin-section { background: #fff; border-radius: 12px; padding: 20px; margin-bottom: 24px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+        .plugin-title { font-size: 1.25rem; font-weight: 700; color: #475569; margin-top: 0; margin-bottom: 16px; display: flex; align-items: center; }
+        .plugin-title span { background: #4f46e5; color: #fff; width: 24px; height: 24px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 0.8rem; margin-right: 10px; }
+        .setting-group { margin-bottom: 12px; padding: 10px; border: 1px solid #f1f5f9; border-radius: 8px; }
+        .setting-group label { display: block; font-weight: 600; margin-bottom: 4px; }
+        .options { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 8px; }
+        .option { display: flex; align-items: flex-start; gap: 8px; font-size: 0.9rem; }
+        .option input { margin-top: 3px; }
+        textarea { width: 100%; height: 100px; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; font-family: monospace; font-size: 0.85rem; }
+        .actions { display: flex; gap: 12px; margin-top: 30px; }
+        button { background: #4f46e5; color: #fff; border: none; padding: 12px 24px; border-radius: 8px; font-weight: 700; cursor: pointer; transition: background 0.2s; }
+        button:hover { background: #4338ca; }
+        button.secondary { background: #94a3b8; }
+        #output-wrap { display: none; margin-top: 30px; }
+        .copy-btn { margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+
+    <h1>Credoq Test Case Builder</h1>
+    <p>Select the admin configurations you want to test. This will generate a precise prompt for Gemini to build your E2E test suite.</p>
+
+    <div id="builder-form">
+        <!-- Engine -->
+        <div class="plugin-section">
+            <h2 class="plugin-title"><span>1</span> Credoq Engine (General)</h2>
+            <div class="setting-group">
+                <label>Security & Filtering</label>
+                <div class="options">
+                    <div class="option"><input type="checkbox" name="engine" value="ip_block_enabled"> IP Block Enabled</div>
+                    <div class="option"><input type="checkbox" name="engine" value="country_block_enabled"> Country Block Enabled</div>
+                    <div class="option"><input type="checkbox" name="engine" value="recaptcha_enabled"> reCAPTCHA Enabled (v2/v3)</div>
+                    <div class="option"><input type="checkbox" name="engine" value="debug_mode"> Debug Mode Logging</div>
+                </div>
+            </div>
+            <div class="setting-group">
+                <label>Localization</label>
+                <div class="options">
+                    <div class="option"><input type="checkbox" name="engine" value="custom_currency"> Custom Currency (non-USD)</div>
+                    <div class="option"><input type="checkbox" name="engine" value="custom_date_format"> Custom Date/Time Formats</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Appointments -->
+        <div class="plugin-section">
+            <h2 class="plugin-title"><span>2</span> Credoq Appointments</h2>
+            <div class="setting-group">
+                <label>Booking Flow</label>
+                <div class="options">
+                    <div class="option"><input type="checkbox" name="apt" value="booking_mode_manual"> Manual Approval Mode (Pending)</div>
+                    <div class="option"><input type="checkbox" name="apt" value="require_login"> Require Login to Book</div>
+                    <div class="option"><input type="checkbox" name="apt" value="enable_waiting_list"> Waiting List for Full Slots</div>
+                    <div class="option"><input type="checkbox" name="apt" value="show_staff_selector"> Staff Selection Enabled</div>
+                </div>
+            </div>
+            <div class="setting-group">
+                <label>Lead Times & Policies</label>
+                <div class="options">
+                    <div class="option"><input type="checkbox" name="apt" value="min_lead_time"> Minimum Lead Time (Notice)</div>
+                    <div class="option"><input type="checkbox" name="apt" value="max_lead_time"> Maximum Advance Booking</div>
+                    <div class="option"><input type="checkbox" name="apt" value="cancel_policy"> Cancellation Policy Enforcement</div>
+                </div>
+            </div>
+            <div class="setting-group">
+                <label>Emails</label>
+                <div class="options">
+                    <div class="option"><input type="checkbox" name="apt" value="email_confirm"> Confirmation Email</div>
+                    <div class="option"><input type="checkbox" name="apt" value="email_reminder"> Reminder Email</div>
+                    <div class="option"><input type="checkbox" name="apt" value="email_pending"> Pending/Received Email</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Events -->
+        <div class="plugin-section">
+            <h2 class="plugin-title"><span>3</span> Credoq Events</h2>
+            <div class="setting-group">
+                <label>Event Rules</label>
+                <div class="options">
+                    <div class="option"><input type="checkbox" name="event" value="capacity_limit"> Capacity Enforcement</div>
+                    <div class="option"><input type="checkbox" name="event" value="wc_integration"> WooCommerce Integration (Paid)</div>
+                    <div class="option"><input type="checkbox" name="event" value="credit_deduction"> Membership Credit Deduction</div>
+                    <div class="option"><input type="checkbox" name="event" value="zoom_integration"> Zoom/Meet Links</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Seats -->
+        <div class="plugin-section">
+            <h2 class="plugin-title"><span>4</span> Credoq Seats</h2>
+            <div class="setting-group">
+                <label>Map Logic</label>
+                <div class="options">
+                    <div class="option"><input type="checkbox" name="seats" value="multi_event_mapping"> Multi-Event Plan Sharing</div>
+                    <div class="option"><input type="checkbox" name="seats" value="seat_overrides"> Individual Seat Price Overrides</div>
+                    <div class="option"><input type="checkbox" name="seats" value="visual_seat_hold"> Real-time Seat Holds</div>
+                    <div class="option"><input type="checkbox" name="seats" value="auto_detect_plan"> Auto-detect Plan for Event</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Membership -->
+        <div class="plugin-section">
+            <h2 class="plugin-title"><span>5</span> Credoq Membership</h2>
+            <div class="setting-group">
+                <label>Restriction & Credits</label>
+                <div class="options">
+                    <div class="option"><input type="checkbox" name="member" value="restricted_pages"> Page/Product Gating</div>
+                    <div class="option"><input type="checkbox" name="member" value="url_gating"> URL-based Restriction</div>
+                    <div class="option"><input type="checkbox" name="member" value="css_hiding"> CSS Selector Hiding</div>
+                    <div class="option"><input type="checkbox" name="member" value="credit_ledger"> Ledger/Balance Tracking</div>
+                    <div class="option"><input type="checkbox" name="member" value="qr_attendance"> QR Scan Attendance</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="actions">
+            <button onclick="generatePrompt()">Generate Test Suite Prompt</button>
+            <button class="secondary" onclick="resetForm()">Reset</button>
+        </div>
+    </div>
+
+    <div id="output-wrap">
+        <h2>Generated Prompt (.md)</h2>
+        <button class="copy-btn" onclick="copyPrompt()">Copy to Clipboard</button>
+        <button class="copy-btn" onclick="downloadPrompt()">Download as MD</button>
+        <textarea id="prompt-output" readonly></textarea>
+    </div>
+
+    <script>
+        function generatePrompt() {
+            const selected = [];
+            document.querySelectorAll('input[type="checkbox"]:checked').forEach(cb => {
+                selected.push(`${cb.name.toUpperCase()}: ${cb.value}`);
+            });
+
+            if (selected.length === 0) {
+                alert('Please select at least one setting.');
+                return;
+            }
+
+            const prompt = `# Credoq E2E Test Suite Specification
+
+## Selected Admin Configuration Baseline
+The following admin settings are configured as active for this test suite:
+${selected.map(s => `- ${s}`).join('\n')}
+
+## Test Objectives
+Build a comprehensive E2E test suite that validates the following interactions:
+
+### 1. Admin/Developer Understanding
+- **Configuration Mapping**: Verify that the selected options are correctly persisted in the database (\`wp_options\`).
+- **Logic Branching**: Ensure the code correctly branches based on these settings (e.g., if 'manual approval' is checked, the \`Booking_Service\` must set status to 'pending').
+- **Status Integrity**: Check that reports and audit logs correctly reflect the state changes induced by these settings.
+
+### 2. Frontend Customer Workflow
+- **Widget Behavior**: The React booking widget must adapt its UI (e.g., show/hide staff, toggle seat maps, show login prompts).
+- **Validation**: Frontend validation must match the admin rules (e.g., reCAPTCHA enforcement, lead-time blocking).
+- **Payment & Credits**: If WC or Credits are selected, the checkout flow must process the correct amounts derived from the configuration.
+
+### 3. Execution Plan (Prompt for Gemini)
+Please build a new test track (or update existing ones) with the following:
+- **Track A (Mock)**: A PHP unit test covering the core service logic for these settings.
+- **Track B (E2E)**: A Playwright test driving a browser through the full customer lifecycle.
+- **Verification**: Assert that the database state, UI feedback, and email/notification triggers are correct.
+
+---
+Generated by Credoq Test Case Builder
+`;
+
+            document.getElementById('prompt-output').value = prompt;
+            document.getElementById('output-wrap').style.display = 'block';
+            window.scrollTo(0, document.body.scrollHeight);
+        }
+
+        function copyPrompt() {
+            const el = document.getElementById('prompt-output');
+            el.select();
+            document.execCommand('copy');
+            alert('Prompt copied to clipboard!');
+        }
+
+        function downloadPrompt() {
+            const text = document.getElementById('prompt-output').value;
+            const blob = new Blob([text], { type: 'text/markdown' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'credoq-test-spec.md';
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+
+        function resetForm() {
+            document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+            document.getElementById('output-wrap').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
