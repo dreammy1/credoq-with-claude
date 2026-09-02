@@ -47,10 +47,12 @@ class Waiting_List_Repository {
                 date_i18n( get_option('date_format'), strtotime($date) ),
                 date_i18n( 'H:i', strtotime($time) )
             );
-            if ( class_exists( '\CredoqMembership\Notification_Service' ) ) {
-                \CredoqMembership\Notification_Service::add( intval($next->user_id), 'waiting_list_offer', 'Slot Available!', $msg );
+            if ( class_exists( '\CredoqEngine\Mail\Notifications' ) ) {
+                \CredoqEngine\Mail\Notifications::create( 'waiting_list', 'Slot Available!', $msg, admin_url('admin.php?page=credoq-bookings') );
             }
-            if ( $next->guest_email ) {
+            if ( $next->guest_email && class_exists( '\CredoqEngine\Mail\Mailer' ) ) {
+                \CredoqEngine\Mail\Mailer::send( $next->guest_email, 'Slot Available – ' . ( $apt->title ?? '' ), $msg );
+            } elseif ( $next->guest_email ) {
                 wp_mail( $next->guest_email, 'Slot Available – ' . ( $apt->title ?? '' ), $msg );
             }
         }

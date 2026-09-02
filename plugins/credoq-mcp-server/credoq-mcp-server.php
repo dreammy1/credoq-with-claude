@@ -2,15 +2,13 @@
 /**
  * Plugin Name: CredoQ MCP Server
  * Description: Authenticated MCP endpoint for scoped AI management of CredoQ plugins.
- * Version: 0.2.0
+ * Version: 0.1.2
  * Requires at least: 6.0
  * Requires PHP: 7.4
  * Author: CredoQ
  */
 
 defined( 'ABSPATH' ) || exit;
-
-require_once __DIR__ . '/includes/Business_Automation.php';
 
 final class Credoq_MCP_Server {
     const NS = 'credoq-mcp/v1';

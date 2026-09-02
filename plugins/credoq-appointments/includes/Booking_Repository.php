@@ -144,4 +144,25 @@ class Booking_Repository {
         global $wpdb;
         $wpdb->delete( $wpdb->prefix . 'credoq_bookings', ['id' => $id] );
     }
+
+    /**
+     * AUDIT-FEATURE (Concurrency): find all appointments for a staff member
+     * within a specific datetime range. Used by Events to block
+     * registration if the staff member is already in an appointment.
+     */
+    public static function find_for_staff_in_range( int $staff_id, string $start_dt, string $end_dt ) : array {
+        global $wpdb;
+        if ( ! $staff_id ) return [];
+
+        $date = substr( $start_dt, 0, 10 );
+        // We look for any booking on the same date where the times overlap.
+        // Appointment busy window = [selected_time, selected_time + duration].
+        return $wpdb->get_results( $wpdb->prepare(
+            "SELECT id, selected_time, duration
+             FROM {$wpdb->prefix}credoq_bookings
+             WHERE staff_id = %d
+               AND selected_date = %s
+               AND status NOT IN ('cancelled','failed','refunded')",
+            $staff_id, $date ) );
+    }
 }

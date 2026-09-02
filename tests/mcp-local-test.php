@@ -61,8 +61,6 @@ assert_true( in_array( 'credoq_list_forms', $names, true ) && in_array( 'credoq_
 assert_true( in_array( 'credoq_propose_booking_update', $names, true ) && in_array( 'credoq_propose_service_update', $names, true ) && in_array( 'credoq_propose_seat_plan_update', $names, true ), 'management proposal tools are discoverable' );
 assert_true( in_array( 'credoq_apply_management_proposal', $names, true ), 'confirmed management write tool is discoverable' );
 assert_true( in_array( 'credoq_list_payment_gateways', $names, true ) && in_array( 'credoq_preview_staging_order', $names, true ) && in_array( 'credoq_create_staging_order', $names, true ), 'payment and staging-order tools are discoverable' );
-assert_true( in_array( 'credoq_preview_provision', $names, true ) && in_array( 'credoq_apply_provision', $names, true ), 'typed provisioning tools are discoverable' );
-assert_true( in_array( 'credoq_preview_business_e2e', $names, true ) && in_array( 'credoq_run_business_e2e', $names, true ) && in_array( 'credoq_verify_business_journey', $names, true ), 'business journey orchestration tools are discoverable' );
 $audit = rpc( [ 'jsonrpc' => '2.0', 'id' => 4, 'method' => 'tools/call', 'params' => [ 'name' => 'credoq_list_audit_log', 'arguments' => [ 'days' => 7 ] ] ] );
 assert_true( $audit->get_data()['result']['structuredContent']['total'] >= 0, 'audit history can be read without mutation' );
 $read = rpc( [ 'jsonrpc' => '2.0', 'id' => 5, 'method' => 'tools/call', 'params' => [ 'name' => 'credoq_get_setting', 'arguments' => [ 'option' => 'credoq_demo_setting' ] ] ] );
