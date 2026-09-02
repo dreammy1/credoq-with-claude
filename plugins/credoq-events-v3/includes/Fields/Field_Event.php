@@ -292,19 +292,30 @@ class Field_Event extends Field_Type {
      * Current user's membership-credit standing, without deducting
      * anything. Safe to call even when Credoq Membership isn't active.
      */
-    private function membership_credit_status( int $needed_credits ) : array {
-        $status = [ 'active_plugin' => false, 'user_id' => 0, 'balance' => 0, 'sufficient' => false ];
+    private function membership_credit_status( int $needed_credits, array $submission = [] ) : array {
+        $status = [ 'user_id' => 0, 'balance' => 0, 'sufficient' => false, 'plan_id' => 0 ];
         if ( ! class_exists( '\\CredoqMembership\\Membership_Service' ) ) return $status;
 
-        $status['active_plugin'] = true;
         $user_id = get_current_user_id();
-        if ( ! $user_id ) return $status; // guests have no membership credit
+        if ( ! $user_id ) return $status;
+
+        // Find the plan_id from the membership_credit field in the submission.
+        $plan_id = 0;
+        foreach ( $submission as $key => $val ) {
+            if ( str_contains( $key, 'membership_credit' ) && ! empty( $val ) ) {
+                $plan_id = absint( $val );
+                break;
+            }
+        }
 
         $status['user_id'] = $user_id;
+        $status['plan_id'] = $plan_id;
         $service           = new \CredoqMembership\Membership_Service();
-        $status['balance'] = $service->get_balance( $user_id, 0, 0 );
+        $status['balance'] = $service->get_balance( $user_id, $plan_id, (int) ( $submission['form_id'] ?? 0 ) );
         $status['sufficient'] = $status['balance'] >= max( 1, $needed_credits );
         return $status;
+    }
+
     }
 
     /** @var array|null Memoized per-request payment decision — see decide_payment(). */
@@ -351,10 +362,11 @@ class Field_Event extends Field_Type {
             $needed_credits += $qty * max( 1, (int) $event->credit_deduct_amount );
         }
 
-        $decision = [ 'use_credit' => false, 'needed_credits' => $needed_credits, 'user_id' => 0 ];
+        $decision = [ 'use_credit' => false, 'needed_credits' => $needed_credits, 'user_id' => 0, 'plan_id' => 0 ];
         if ( $needed_credits > 0 ) {
-            $status = $this->membership_credit_status( $needed_credits );
+            $status = $this->membership_credit_status( $needed_credits, $submission );
             $decision['user_id']    = $status['user_id'];
+            $decision['plan_id']    = $status['plan_id'];
             $decision['use_credit'] = $status['sufficient']; // (a) vs (b)
         }
         return $this->credit_decision = $decision;
@@ -624,7 +636,7 @@ class Field_Event extends Field_Type {
                 $decision['user_id'],
                 -$credits_spent,
                 'use',
-                0,
+                (int) $decision['plan_id'],
                 $submission_id,
                 __( 'Event registration', 'credoq-events' )
             );

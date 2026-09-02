@@ -216,11 +216,11 @@ class Reports_Page {
             $wpdb->suppress_errors( true );
 
             $total = intval( $wpdb->get_var( $wpdb->prepare(
-                "SELECT COUNT(*) FROM {$tbl} WHERE {$date_col} BETWEEN %s AND %s", $s, $e ) ) );
+                "SELECT COUNT(*) FROM {$tbl} WHERE {$date_col} BETWEEN %s AND %s AND status NOT IN ('cancelled','refunded','failed','pending_payment')", $s, $e ) ) );
 
             $daily = $wpdb->get_results( $wpdb->prepare(
                 "SELECT DATE({$date_col}) as day, COUNT(*) as cnt
-                 FROM {$tbl} WHERE {$date_col} BETWEEN %s AND %s
+                 FROM {$tbl} WHERE {$date_col} BETWEEN %s AND %s AND status NOT IN ('cancelled','refunded','failed','pending_payment')
                  GROUP BY DATE({$date_col}) ORDER BY day ASC", $s, $e ) );
 
             $wpdb->suppress_errors( false );

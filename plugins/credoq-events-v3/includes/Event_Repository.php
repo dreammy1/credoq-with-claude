@@ -67,4 +67,22 @@ class Event_Repository {
              WHERE event_id = %d AND status NOT IN ('cancelled','refunded')",
             $event_id ) ) );
     }
+
+    /**
+     * AUDIT-FEATURE (Concurrency): find all events a staff member is
+     * assigned to on a specific date. Used by Appointments to block
+     * slots where the staff member is already leading an event.
+     */
+    public static function find_for_staff_on_date( int $staff_id, string $date ) : array {
+        global $wpdb;
+        if ( ! $staff_id ) return [];
+        return $wpdb->get_results( $wpdb->prepare(
+            "SELECT title, start_datetime, end_datetime
+             FROM {$wpdb->prefix}credoq_events
+             WHERE staff_id = %d
+               AND ( DATE(start_datetime) = %s OR DATE(end_datetime) = %s )
+               AND status = 'published'
+             ORDER BY start_datetime ASC",
+            $staff_id, $date, $date ) );
+    }
 }
