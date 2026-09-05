@@ -36,6 +36,15 @@ class Menu {
 
 		add_submenu_page(
 			self::PARENT_SLUG,
+			__( 'Command Center', 'credoq-engine' ),
+			__( 'Command Center', 'credoq-engine' ),
+			'manage_options',
+			'credoq-command',
+			[ Command_Center::class, 'render' ]
+		);
+
+		add_submenu_page(
+			self::PARENT_SLUG,
 			__( 'Forms', 'credoq-engine' ),
 			__( 'Forms', 'credoq-engine' ),
 			'manage_options',

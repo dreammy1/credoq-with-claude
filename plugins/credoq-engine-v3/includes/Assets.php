@@ -43,6 +43,7 @@ class Assets {
 			'restNonce' => wp_create_nonce( 'wp_rest' ),
 			'adminUrl'  => admin_url(),
 			'ajaxUrl'   => admin_url( 'admin-ajax.php' ),
+			'aiNonce'   => wp_create_nonce( 'credoq_ai_command' ),
 			'i18n'      => array(
 				'confirm_delete' => __( 'Are you sure?', 'credoq-engine' ),
 				'saved'          => __( 'Saved.', 'credoq-engine' ),

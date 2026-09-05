@@ -92,6 +92,7 @@ final class Plugin {
 		// AJAX handlers for the booking widget (runs on init so addons can
 		// override the stubs at priority 20 inside credoq_engine_ready).
 		Ajax\Booking::register();
+		Ajax\AI_Handler::register();
 
 		// SMTP mailer, submission notifications (email + bell), audit log.
 		Mail\Mailer::register();

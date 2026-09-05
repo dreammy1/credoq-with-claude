@@ -41,6 +41,15 @@ class Settings_Page {
 			$cur['recaptcha_secret_key']   = sanitize_text_field( $_POST['recaptcha_secret_key'] ?? '' );
 			$cur['recaptcha_v3_threshold'] = max( 0, min( 1, (float) ( $_POST['recaptcha_v3_threshold'] ?? 0.5 ) ) );
 
+			// ── AI Bridge ────────────────────────────────────────────
+			$cur['ai_gemini_key']        = sanitize_text_field( $_POST['ai_gemini_key']        ?? '' );
+			$cur['ai_claude_key']        = sanitize_text_field( $_POST['ai_claude_key']        ?? '' );
+			$cur['ai_openai_key']        = sanitize_text_field( $_POST['ai_openai_key']        ?? '' );
+			$cur['ai_grok_key']          = sanitize_text_field( $_POST['ai_grok_key']          ?? '' );
+			$cur['ai_deepseek_key']      = sanitize_text_field( $_POST['ai_deepseek_key']      ?? '' );
+			$cur['ai_admin_provider']    = sanitize_key( $_POST['ai_admin_provider']           ?? 'gemini' );
+			$cur['ai_customer_provider'] = sanitize_key( $_POST['ai_customer_provider']        ?? 'gemini' );
+
 			update_option( self::OPT, $cur );
 			// Sync the debug mode option separately so credoq_log() can read it cheaply.
 			update_option( 'credoq_debug_mode', $cur['debug_mode'] );
@@ -78,6 +87,11 @@ class Settings_Page {
 					<span class="dashicons dashicons-shield" style="font-size:16px;width:16px;height:16px;margin-top:1px;"></span>
 					<?php esc_html_e( 'Security', 'credoq-engine' ); ?>
 				</a>
+				<a href="<?php echo esc_url( add_query_arg( array( 'page' => 'credoq-settings', 'tab' => 'ai' ), admin_url( 'admin.php' ) ) ); ?>"
+				   class="<?php echo $tab === 'ai' ? 'active' : ''; ?>">
+					<span class="dashicons dashicons-brain" style="font-size:16px;width:16px;height:16px;margin-top:1px;"></span>
+					<?php esc_html_e( 'AI Bridge', 'credoq-engine' ); ?>
+				</a>
 			</div>
 
 			<form method="post">
@@ -105,6 +119,64 @@ class Settings_Page {
 								<td>
 									<label><input type="checkbox" name="debug_mode" value="1" <?php checked( ! empty( $s['debug_mode'] ) ); ?>>
 										<?php esc_html_e( 'Write extra info to debug.log (requires WP_DEBUG_LOG)', 'credoq-engine' ); ?></label>
+								</td>
+							</tr>
+						</table>
+					</div>
+
+				<?php elseif ( 'ai' === $tab ) : ?>
+
+					<div class="credoq-card">
+						<h2 class="credoq-section-title"><?php esc_html_e( 'LLM Providers', 'credoq-engine' ); ?></h2>
+						<p class="description"><?php esc_html_e( 'Enter your API keys for the providers you wish to use. These keys are used to communicate with the AI models for the Command Center and Customer Assistant.', 'credoq-engine' ); ?></p>
+						
+						<table class="form-table">
+							<tr>
+								<th><?php esc_html_e( 'Google Gemini Key', 'credoq-engine' ); ?></th>
+								<td><input type="password" name="ai_gemini_key" value="<?php echo esc_attr( $s['ai_gemini_key'] ?? '' ); ?>" class="regular-text"></td>
+							</tr>
+							<tr>
+								<th><?php esc_html_e( 'Anthropic Claude Key', 'credoq-engine' ); ?></th>
+								<td><input type="password" name="ai_claude_key" value="<?php echo esc_attr( $s['ai_claude_key'] ?? '' ); ?>" class="regular-text"></td>
+							</tr>
+							<tr>
+								<th><?php esc_html_e( 'OpenAI ChatGPT Key', 'credoq-engine' ); ?></th>
+								<td><input type="password" name="ai_openai_key" value="<?php echo esc_attr( $s['ai_openai_key'] ?? '' ); ?>" class="regular-text"></td>
+							</tr>
+							<tr>
+								<th><?php esc_html_e( 'xAI Grok Key', 'credoq-engine' ); ?></th>
+								<td><input type="password" name="ai_grok_key" value="<?php echo esc_attr( $s['ai_grok_key'] ?? '' ); ?>" class="regular-text"></td>
+							</tr>
+							<tr>
+								<th><?php esc_html_e( 'DeepSeek Key', 'credoq-engine' ); ?></th>
+								<td><input type="password" name="ai_deepseek_key" value="<?php echo esc_attr( $s['ai_deepseek_key'] ?? '' ); ?>" class="regular-text"></td>
+							</tr>
+						</table>
+					</div>
+
+					<div class="credoq-card">
+						<h2 class="credoq-section-title"><?php esc_html_e( 'Active Providers', 'credoq-engine' ); ?></h2>
+						<table class="form-table">
+							<tr>
+								<th><?php esc_html_e( 'Admin Command Center', 'credoq-engine' ); ?></th>
+								<td>
+									<select name="ai_admin_provider">
+										<?php foreach ( \CredoqEngine\AI\AI_Bridge::instance()->list_providers() as $p ) : ?>
+											<option value="<?php echo esc_attr( $p['slug'] ); ?>" <?php selected( $s['ai_admin_provider'] ?? 'gemini', $p['slug'] ); ?>><?php echo esc_html( $p['label'] ); ?></option>
+										<?php endforeach; ?>
+									</select>
+									<p class="description"><?php esc_html_e( 'Primary model used for administrative tasks in the Command Center.', 'credoq-engine' ); ?></p>
+								</td>
+							</tr>
+							<tr>
+								<th><?php esc_html_e( 'Customer Assistant', 'credoq-engine' ); ?></th>
+								<td>
+									<select name="ai_customer_provider">
+										<?php foreach ( \CredoqEngine\AI\AI_Bridge::instance()->list_providers() as $p ) : ?>
+											<option value="<?php echo esc_attr( $p['slug'] ); ?>" <?php selected( $s['ai_customer_provider'] ?? 'gemini', $p['slug'] ); ?>><?php echo esc_html( $p['label'] ); ?></option>
+										<?php endforeach; ?>
+									</select>
+									<p class="description"><?php esc_html_e( 'Model used for the frontend customer chat widget.', 'credoq-engine' ); ?></p>
 								</td>
 							</tr>
 						</table>
