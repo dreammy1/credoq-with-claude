@@ -546,7 +546,7 @@ class Booking_Service {
         // Offer waiting list next person.
         Waiting_List_Repository::offer_next(
             intval( $booking->appointment_id ),
-            intval( $booking->staff_id ),
+            ! empty( $booking->staff_id ) ? intval( $booking->staff_id ) : 0,
             $booking->selected_date,
             $booking->selected_time
         );

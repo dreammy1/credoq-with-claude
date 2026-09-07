@@ -174,22 +174,26 @@ class FakeWPDB {
         if (str_contains($query, 'SUM(amount) FROM credoq_credit_ledger')) {
             $sum = 0;
             foreach ($this->credit_ledger as $row) {
-                if ($row['user_id'] == $args[0]) {
+                if ($row['user_id'] == ($args[0] ?? 0)) {
                     if (!isset($args[1]) || $row['plan_id'] == $args[1]) $sum += $row['amount'];
                 }
             }
             return $sum;
         }
         if (str_contains($query, 'FROM credoq_submissions WHERE id')) {
-            $row = $this->submissions[$args[0]] ?? null;
+            $row = $this->submissions[$args[0] ?? 0] ?? null;
             if (!$row) return null;
             if (str_contains($query, 'SELECT form_id')) return $row['form_id'];
             return null;
         }
-        if (str_contains($query, 'SELECT payload FROM credoq_submissions')) return $this->submissions[$args[0]]['payload'] ?? null;
-        if (str_contains($query, 'SELECT submission_id FROM credoq_event_bookings')) return $this->event_bookings[$args[0]]['submission_id'] ?? null;
+        if (str_contains($query, 'SELECT payload FROM credoq_submissions')) return $this->submissions[$args[0] ?? 0]['payload'] ?? null;
+        if (str_contains($query, 'SELECT submission_id FROM credoq_event_bookings')) return $this->event_bookings[$args[0] ?? 0]['submission_id'] ?? null;
         
-        if (str_contains($query, 'SELECT COUNT(*)')) { return $this->count_bookings($query, $args); }
+        // Seat specific count?
+        if (str_contains($query, 'SELECT COUNT(*)') && str_contains($query, 'FROM credoq_seat_bookings')) { 
+            return $this->count_bookings($query, $args); 
+        }
+        
         if (str_contains($query, 'SELECT id FROM') && str_contains($query,'credoq_seat_bookings')) {
             return $this->find_existing_booking_id($query, $args);
         }
@@ -386,47 +390,55 @@ class FakeWPDB {
     function get_charset_collate() { return 'DEFAULT CHARSET utf8'; }
 
     private function count_bookings($query, $args) {
-        $seat_id = $args[0]; $date = $args[1]; $time = $args[2];
+        $seat_id = $args[0] ?? 0; $date = $args[1] ?? ''; $time = $args[2] ?? '';
         $has_event_scope = str_contains($query, 'event_id = %d');
         $idx = 3;
         $event_id = 0;
-        if ($has_event_scope) { $event_id = $args[3]; $idx = 5; }
+        if ($has_event_scope) { $event_id = $args[3] ?? 0; $idx = 5; }
         $now = $args[$idx] ?? gmdate('Y-m-d H:i:s');
         $n = 0;
         foreach ($this->seat_bookings as $row) {
             $row = (array)$row;
             if ($row['seat_id'] != $seat_id) continue;
             if ($row['date_context'] !== $date) continue;
-            if (($row['time_context'] ?? null) !== $time) continue;
+            
+            $row_time = $row['time_context'] ?? '';
+            if ($row_time === null) $row_time = '';
+            if ($row_time !== $time) continue;
+
             if ($has_event_scope && $event_id != 0 && ($row['event_id'] ?? 0) != $event_id) continue;
-            if ($row['status'] === 'confirmed' || ($row['status'] === 'held' && $row['held_until'] >= $now)) $n++;
+            if ($row['status'] === 'confirmed' || ($row['status'] === 'held' && $row['held_until'] >= $now)) {
+                $n++;
+            }
         }
         return $n;
     }
 
     private function fake_delete($query, $args) {
         if (str_contains($query, "status = 'held' AND held_until <")) {
-            $seat_id = $args[0]; $date = $args[1]; $time = $args[2];
+            $seat_id = $args[0]; $date = $args[1]; $time = $args[2] ?? '';
             $has_event_scope = str_contains($query, 'event_id = %d');
             $event_id = $has_event_scope ? $args[3] : 0;
             $now = $args[count($args)-1];
             foreach ($this->seat_bookings as $id => $row) {
                 $row = (array)$row;
                 if ($row['seat_id'] != $seat_id || $row['date_context'] !== $date) continue;
-                if (($row['time_context'] ?? null) !== $time) continue;
+                $row_time = ($row['time_context'] ?? '') ?: '';
+                if ($row_time !== $time) continue;
                 if ($has_event_scope && $event_id != 0 && ($row['event_id'] ?? 0) != $event_id) continue;
                 if ($row['status'] === 'held' && $row['held_until'] < $now) unset($this->seat_bookings[$id]);
             }
             return true;
         }
         if (str_contains($query, "status = 'held'") && !str_contains($query, 'held_until <')) {
-            $seat_id = $args[0]; $date = $args[1]; $time = $args[2];
+            $seat_id = $args[0]; $date = $args[1]; $time = $args[2] ?? '';
             $has_event_scope = str_contains($query, 'event_id = %d');
             $event_id = $has_event_scope ? $args[3] : 0;
             foreach ($this->seat_bookings as $id => $row) {
                 $row = (array)$row;
                 if ($row['seat_id'] != $seat_id || $row['date_context'] !== $date) continue;
-                if (($row['time_context'] ?? null) !== $time) continue;
+                $row_time = ($row['time_context'] ?? '') ?: '';
+                if ($row_time !== $time) continue;
                 if ($has_event_scope && $event_id != 0 && ($row['event_id'] ?? 0) != $event_id) continue;
                 if ($row['status'] === 'held') unset($this->seat_bookings[$id]);
             }
@@ -436,14 +448,15 @@ class FakeWPDB {
     }
 
     private function find_existing_booking_id($query, $args) {
-        $seat_id = $args[0]; $date = $args[1]; $time = $args[2];
+        $seat_id = $args[0]; $date = $args[1]; $time = $args[2] ?? '';
         $has_event_scope = str_contains($query, 'event_id = %d');
         $event_id = $has_event_scope ? $args[3] : 0;
         $candidates = [];
         foreach ($this->seat_bookings as $id => $row) {
             $row = (array)$row;
             if ($row['seat_id'] != $seat_id || $row['date_context'] !== $date) continue;
-            if (($row['time_context'] ?? null) !== $time) continue;
+            $row_time = ($row['time_context'] ?? '') ?: '';
+            if ($row_time !== $time) continue;
             if ($has_event_scope && $event_id != 0 && ($row['event_id'] ?? 0) != $event_id) continue;
             if (in_array($row['status'], ['held','confirmed'])) $candidates[$id] = $row;
         }
@@ -453,7 +466,7 @@ class FakeWPDB {
     }
 
     private function booked_seat_ids($query, $args) {
-        $plan_id = $args[0]; $date = $args[1]; $time = $args[2];
+        $plan_id = $args[0]; $date = $args[1]; $time = $args[2] ?? '';
         $has_event_scope = str_contains($query, 'event_id = %d');
         $idx = 4;
         $event_id = 0;
@@ -463,7 +476,10 @@ class FakeWPDB {
         foreach ($this->seat_bookings as $row) {
             $row = (array)$row;
             if ($row['plan_id'] != $plan_id || $row['date_context'] !== $date) continue;
-            if ($time !== '' && ($row['time_context'] ?? '') !== $time) continue;
+            
+            $row_time = ($row['time_context'] ?? '') ?: '';
+            if ($time !== '' && $row_time !== $time) continue;
+
             if ($has_event_scope && $event_id != 0 && ($row['event_id'] ?? 0) != $event_id) continue;
             if ($row['status'] === 'confirmed' || ($row['status'] === 'held' && $row['held_until'] >= $now)) $out[] = $row['seat_id'];
         }

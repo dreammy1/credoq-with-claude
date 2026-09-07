@@ -29,7 +29,7 @@ class Event_Service {
         if ( ! $event ) return false;
 
         // AUDIT-FIX (Concurrency): check if staff is busy with an Appointment.
-        if ( $event->staff_id > 0 && class_exists( '\CredoqAppointments\Booking_Repository' ) ) {
+        if ( ! empty( $event->staff_id ) && class_exists( '\CredoqAppointments\Booking_Repository' ) ) {
             $appointments = \CredoqAppointments\Booking_Repository::find_for_staff_in_range(
                 (int) $event->staff_id, $event->start_datetime, $event->end_datetime
             );
@@ -226,7 +226,7 @@ class Event_Service {
         Event_Booking_Repository::update_status($booking_id, 'cancelled');
 
         // Refund membership credits if any were deducted.
-        if ( (int) $b->credit_deducted > 0 && class_exists( '\CredoqMembership\Membership_Service' ) ) {
+        if ( ! empty( $b->credit_deducted ) && (int) $b->credit_deducted > 0 && class_exists( '\CredoqMembership\Membership_Service' ) ) {
             global $wpdb;
             $ledger_table = $wpdb->prefix . 'credoq_credit_ledger';
             $entry = $wpdb->get_row( $wpdb->prepare(

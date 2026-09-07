@@ -69,18 +69,34 @@ async function withDiagnostics(page, label, fn) {
 async function mockAjax(page, handlers) {
   await page.route('**/admin-ajax.php*', async (route) => {
     const postData = route.request().postData() || '';
-    const actionMatch = postData.match(/name="action"\r?\n\r?\n([^\r\n-]+)/);
-    const action = actionMatch ? actionMatch[1].trim() : '';
+    
+    // Extract action from multipart/form-data more robustly
+    let action = '';
+    const actionMatch = postData.match(/name="action"\s*[\r\n]+([\w-]+)/);
+    if (actionMatch) {
+      action = actionMatch[1].trim();
+    } else {
+      // Fallback for URL-encoded
+      const params = new URLSearchParams(postData);
+      action = params.get('action') || '';
+    }
 
     const fields = {};
-    const fieldRe = /name="([^"]+)"\r?\n\r?\n([\s\S]*?)\r?\n--/g;
+    // Extract other fields best-effort
+    const fieldRe = /name="([^"]+)"\s*[\r\n]+([\s\S]*?)(?=[\r\n]+--)/g;
     let m;
     while ((m = fieldRe.exec(postData)) !== null) {
-      fields[m[1]] = m[2];
+      if (m[1] !== 'action') fields[m[1]] = m[2].trim();
+    }
+    // Also include URLSearchParams for url-encoded fallback
+    if (Object.keys(fields).length === 0 && postData && !postData.includes('--')) {
+      const params = new URLSearchParams(postData);
+      params.forEach((val, key) => { if (key !== 'action') fields[key] = val; });
     }
 
     const handler = handlers[action];
     if (!handler) {
+      console.warn(`[mock] Unhandled AJAX action: ${action}`);
       await route.fulfill({ json: { success: false, data: { message: `[mock] unhandled action: ${action}` } } });
       return;
     }

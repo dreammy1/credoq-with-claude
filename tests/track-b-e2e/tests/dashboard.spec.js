@@ -105,7 +105,14 @@ test.describe('Dashboard SPA Functionality', () => {
       my_schedule: { label: 'My Schedule', content: panelHtml }
     });
 
+    // Capture the promise for the AJAX response
+    const responsePromise = page.waitForResponse(r => r.url().includes('admin-ajax.php'));
+    
     await page.click('button:has-text("Cancel")');
+    
+    // Wait for the mock to respond
+    await responsePromise;
+
     await expect(page.getByText('Cancelled')).toBeVisible();
     expect(cancelledId).toBe('555');
   });

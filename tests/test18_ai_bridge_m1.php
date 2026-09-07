@@ -36,7 +36,7 @@ use CredoqEngine\AI\AI_Driver;
 class Mock_Driver extends AI_Driver {
     public function get_slug() : string { return 'test_driver'; }
     public function get_label() : string { return 'Test Driver'; }
-    public function chat(string $prompt, array $history = []) : array {
+    public function chat(string $prompt, array $history = [], string $context = 'admin') : array {
         if ($prompt === 'ping') return ['text' => 'pong', 'history' => $history];
         if ($prompt === 'call_tool') {
             $res = $this->execute_tool('credoq_system_status', []);
