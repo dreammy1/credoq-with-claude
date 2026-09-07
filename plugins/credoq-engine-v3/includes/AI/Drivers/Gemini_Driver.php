@@ -24,12 +24,12 @@ class Gemini_Driver extends AI_Driver {
 	public function get_slug() : string { return 'gemini'; }
 	public function get_label() : string { return 'Google Gemini'; }
 
-	public function chat( string $prompt, array $history = [] ) : array {
+	public function chat( string $prompt, array $history = [], string $context = 'admin' ) : array {
 		if ( ! $this->api_key ) {
 			return [ 'text' => 'Gemini API key is not configured.', 'history' => $history ];
 		}
 
-		$tools = $this->get_mcp_tools();
+		$tools = $this->get_mcp_tools( $context );
 		
 		// Build the request payload
 		$contents = $history;
@@ -40,10 +40,10 @@ class Gemini_Driver extends AI_Driver {
 			'tools'    => [ [ 'function_declarations' => $tools ] ],
 		];
 
-		return $this->execute_chat_loop( $payload, $contents );
+		return $this->execute_chat_loop( $payload, $contents, $context );
 	}
 
-	private function execute_chat_loop( array $payload, array $history ) : array {
+	private function execute_chat_loop( array $payload, array $history, string $context ) : array {
 		$url = "https://generativelanguage.googleapis.com/v1beta/models/{$this->model}:generateContent?key={$this->api_key}";
 
 		$response = wp_remote_post( $url, [
@@ -86,9 +86,9 @@ class Gemini_Driver extends AI_Driver {
 			$history[] = [ 'role' => 'function', 'parts' => $tool_results ];
 			$new_payload = [
 				'contents' => $history,
-				'tools'    => [ [ 'function_declarations' => $this->get_mcp_tools() ] ],
+				'tools'    => [ [ 'function_declarations' => $this->get_mcp_tools( $context ) ] ],
 			];
-			return $this->execute_chat_loop( $new_payload, $history );
+			return $this->execute_chat_loop( $new_payload, $history, $context );
 		}
 
 		// No more tool calls, return the final text

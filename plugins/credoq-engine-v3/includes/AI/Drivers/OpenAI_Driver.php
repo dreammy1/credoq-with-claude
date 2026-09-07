@@ -1,6 +1,6 @@
 <?php
 /**
- * OpenAI_Driver — OpenAI API implementation (compatible with Grok/DeepSeek).
+ * OpenAI_Driver — OpenAI API implementation (compatible with Grok/DeepSeek/GitHub).
  *
  * @package CredoqEngine\AI\Drivers
  */
@@ -36,6 +36,12 @@ class OpenAI_Driver extends AI_Driver {
 				$this->model    = 'deepseek-chat';
 				$this->label    = 'DeepSeek';
 				break;
+			case 'github':
+				$this->api_key  = $s['ai_github_key'] ?? '';
+				$this->base_url = 'https://models.inference.ai.azure.com';
+				$this->model    = 'gpt-4o'; // Common model in GH marketplace
+				$this->label    = 'GitHub Models';
+				break;
 			default:
 				$this->api_key  = $s['ai_openai_key'] ?? '';
 				$this->base_url = 'https://api.openai.com/v1';
@@ -48,7 +54,7 @@ class OpenAI_Driver extends AI_Driver {
 	public function get_slug() : string { return $this->slug; }
 	public function get_label() : string { return $this->label; }
 
-	public function chat( string $prompt, array $history = [] ) : array {
+	public function chat( string $prompt, array $history = [], string $context = 'admin' ) : array {
 		if ( ! $this->api_key ) {
 			return [ 'text' => "{$this->label} API key is not configured.", 'history' => $history ];
 		}
@@ -59,13 +65,13 @@ class OpenAI_Driver extends AI_Driver {
 		$payload = [
 			'model'    => $this->model,
 			'messages' => $messages,
-			'tools'    => $this->get_mcp_tools(),
+			'tools'    => $this->get_mcp_tools( $context ),
 		];
 
-		return $this->execute_chat_loop( $payload, $messages );
+		return $this->execute_chat_loop( $payload, $messages, $context );
 	}
 
-	private function execute_chat_loop( array $payload, array $history ) : array {
+	private function execute_chat_loop( array $payload, array $history, string $context ) : array {
 		$response = wp_remote_post( $this->base_url . '/chat/completions', [
 			'timeout' => 30,
 			'headers' => [
@@ -100,12 +106,12 @@ class OpenAI_Driver extends AI_Driver {
 			$new_payload = [
 				'model'    => $this->model,
 				'messages' => $history,
-				'tools'    => $this->get_mcp_tools(),
+				'tools'    => $this->get_mcp_tools( $context ),
 			];
-			return $this->execute_chat_loop( $new_payload, $history );
+			return $this->execute_chat_loop( $new_payload, $history, $context );
 		}
 
-		return [ 'text' => $msg['content'], 'history' => $history ];
+		return [ 'text' => $msg['content'] ?? '', 'history' => $history ];
 	}
 
 	protected function format_tool( array $mcp_tool ) : array {

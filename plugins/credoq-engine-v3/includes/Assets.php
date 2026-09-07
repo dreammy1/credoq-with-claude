@@ -18,7 +18,27 @@ class Assets {
 	 * on pages that actually use them.
 	 */
 	public static function enqueue_frontend() : void {
-		// Reserved for global frontend tweaks. Per-shortcode loads happen below.
+		$s = get_option( 'credoq_engine_settings', [] );
+		
+		if ( ! empty( $s['ai_assistant_enabled'] ) ) {
+			wp_enqueue_style(
+				'credoq-frontend-assistant',
+				CREDOQ_ENGINE_URL . 'assets/css/frontend-assistant.min.css',
+				array(),
+				CREDOQ_ENGINE_VERSION
+			);
+			wp_enqueue_script(
+				'credoq-frontend-assistant',
+				CREDOQ_ENGINE_URL . 'assets/js/frontend-assistant.min.js',
+				array(),
+				CREDOQ_ENGINE_VERSION,
+				true
+			);
+			wp_localize_script( 'credoq-frontend-assistant', 'CredoqFrontend', [
+				'ajaxUrl' => admin_url( 'admin-ajax.php' ),
+				'aiNonce' => wp_create_nonce( 'credoq_ai_assistant' ),
+			] );
+		}
 	}
 
 	public static function enqueue_admin( $hook ) : void {
@@ -31,6 +51,24 @@ class Assets {
 			array(),
 			CREDOQ_ENGINE_VERSION
 		);
+
+		// Special assets for the AI Command Center
+		if ( str_contains( (string) $hook, 'credoq-command' ) ) {
+			wp_enqueue_style(
+				'credoq-command-center',
+				CREDOQ_ENGINE_URL . 'assets/css/command-center.min.css',
+				array(),
+				CREDOQ_ENGINE_VERSION
+			);
+			wp_enqueue_script(
+				'credoq-command-center',
+				CREDOQ_ENGINE_URL . 'assets/js/command-center.min.js',
+				array(),
+				CREDOQ_ENGINE_VERSION,
+				true
+			);
+		}
+
 		wp_enqueue_script(
 			'credoq-engine-admin',
 			CREDOQ_ENGINE_URL . 'assets/js/admin.js',

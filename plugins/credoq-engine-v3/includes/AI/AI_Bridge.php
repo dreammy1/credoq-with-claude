@@ -24,6 +24,7 @@ class AI_Bridge {
 		$this->register_driver( new OpenAI_Driver( 'openai' ) );
 		$this->register_driver( new OpenAI_Driver( 'grok' ) );
 		$this->register_driver( new OpenAI_Driver( 'deepseek' ) );
+		$this->register_driver( new OpenAI_Driver( 'github' ) );
 	}
 
 	public static function instance() : self {
@@ -53,10 +54,38 @@ class AI_Bridge {
 	 * Main chat entry point.
 	 */
 	public function chat( string $prompt, array $history = [], string $context = 'admin' ) : array {
+		// Internal intercept for the "Review & Publish" button in the React UI
+		if ( str_starts_with( $prompt, 'confirm_proposal:' ) ) {
+			$parts = explode( ':', $prompt );
+			if ( count( $parts ) >= 3 ) {
+				$res = $this->execute_apply_creation( $parts[1], $parts[2] );
+				return [
+					'text'    => $res['status'] === 'created' 
+						? "✅ Successfully created the {$res['resource']} (ID: {$res['id']})." 
+						: "❌ Error: " . ($res['message'] ?? 'Could not apply proposal.'),
+					'history' => $history
+				];
+			}
+		}
+
 		$driver = $this->get_active_driver( $context );
 		if ( ! $driver ) return [ 'text' => 'AI Provider not found.', 'history' => $history ];
 
 		return $driver->chat( $prompt, $history );
+	}
+
+	/**
+	 * Direct execution of creation confirmation.
+	 */
+	private function execute_apply_creation( string $id, string $token ) : array {
+		if ( ! class_exists( 'Credoq_MCP_Admin_Expansion' ) ) {
+			return [ 'status' => 'error', 'message' => 'Admin Expansion not loaded.' ];
+		}
+		return \Credoq_MCP_Admin_Expansion::apply_creation( [
+			'proposal_id'   => $id,
+			'confirm_token' => $token,
+			'confirm'       => true
+		] );
 	}
 
 	/**

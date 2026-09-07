@@ -24,7 +24,7 @@ class Claude_Driver extends AI_Driver {
 	public function get_slug() : string { return 'claude'; }
 	public function get_label() : string { return 'Anthropic Claude'; }
 
-	public function chat( string $prompt, array $history = [] ) : array {
+	public function chat( string $prompt, array $history = [], string $context = 'admin' ) : array {
 		if ( ! $this->api_key ) {
 			return [ 'text' => 'Claude API key is not configured.', 'history' => $history ];
 		}
@@ -36,10 +36,10 @@ class Claude_Driver extends AI_Driver {
 			'model'      => $this->model,
 			'messages'   => $messages,
 			'max_tokens' => 4096,
-			'tools'      => $this->get_mcp_tools(),
+			'tools'      => $this->get_mcp_tools( $context ),
 		];
 
-		return $this->execute_chat_loop( $payload, $messages );
+		return $this->execute_chat_loop( $payload, $messages, $context );
 	}
 
 	private function execute_chat_loop( array $payload, array $history ) : array {

@@ -11,6 +11,7 @@
 defined( 'ABSPATH' ) || exit;
 
 require_once __DIR__ . '/includes/Business_Automation.php';
+require_once __DIR__ . '/includes/Admin_Expansion.php';
 
 final class Credoq_MCP_Server {
     const NS = 'credoq-mcp/v1';
@@ -24,6 +25,32 @@ final class Credoq_MCP_Server {
         add_action( 'admin_menu', [ __CLASS__, 'admin_menu' ], 30 );
         add_action( 'admin_post_credoq_mcp_generate_key', [ __CLASS__, 'generate_key' ] );
         add_action( 'admin_post_credoq_mcp_revoke_key', [ __CLASS__, 'revoke_key' ] );
+    }
+
+    /**
+     * List tools filtered by context.
+     * context='admin'    -> all tools
+     * context='customer' -> read-only discovery + booking tools
+     */
+    public static function list_scoped_tools( string $context = 'admin' ) : array {
+        $all = self::tools();
+        if ( $context === 'admin' ) return $all;
+
+        $customer_allowlist = [
+            'credoq_system_status',
+            'credoq_list_services',
+            'credoq_get_service',
+            'credoq_list_events',
+            'credoq_list_staff',
+            'credoq_list_seat_plans',
+            'credoq_get_seat_plan',
+            'credoq_preview_staging_order', // Discovery of prices
+            'credoq_list_payment_gateways'
+        ];
+
+        return array_values( array_filter( $all, function( $t ) use ( $customer_allowlist ) {
+            return in_array( $t['name'], $customer_allowlist, true );
+        } ) );
     }
 
     public static function register_routes() {
@@ -145,6 +172,8 @@ final class Credoq_MCP_Server {
             [ 'name' => 'credoq_preview_business_e2e', 'description' => 'Preview a complete synthetic staging business journey for appointments, events, memberships, seats, forms, or checkout.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'business_type' => [ 'type' => 'string', 'enum' => [ 'appointment', 'event', 'membership', 'seat', 'form', 'full' ] ], 'options' => [ 'type' => 'object' ] ], 'required' => [ 'business_type' ], 'additionalProperties' => false ] ],
             [ 'name' => 'credoq_run_business_e2e', 'description' => 'Run an approved synthetic staging business journey and return a structured end-to-end report.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'proposal_id' => [ 'type' => 'string' ], 'confirm_token' => [ 'type' => 'string' ], 'confirm' => [ 'type' => 'boolean' ] ], 'required' => [ 'proposal_id', 'confirm_token', 'confirm' ], 'additionalProperties' => false ] ],
             [ 'name' => 'credoq_verify_business_journey', 'description' => 'Read back all related submissions, bookings, seats, memberships, orders, notifications, settings, and audit evidence for a test correlation ID.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'correlation_id' => [ 'type' => 'string' ] ], 'required' => [ 'correlation_id' ], 'additionalProperties' => false ] ],
+            [ 'name' => 'credoq_propose_creation', 'description' => 'Propose the creation of a new real business resource (service, staff, membership_plan, event, or form). Returns a confirmation token.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'resource' => [ 'type' => 'string', 'enum' => [ 'service', 'staff', 'membership_plan', 'event', 'form' ] ], 'data' => [ 'type' => 'object' ] ], 'required' => [ 'resource', 'data' ], 'additionalProperties' => false ] ],
+            [ 'name' => 'credoq_apply_creation', 'description' => 'Apply a previously previewed creation proposal only with its one-time token and explicit confirm=true.', 'inputSchema' => [ 'type' => 'object', 'properties' => [ 'proposal_id' => [ 'type' => 'string' ], 'confirm_token' => [ 'type' => 'string' ], 'confirm' => [ 'type' => 'boolean' ] ], 'required' => [ 'proposal_id', 'confirm_token', 'confirm' ], 'additionalProperties' => false ] ],
         ];
     }
 
@@ -311,6 +340,14 @@ final class Credoq_MCP_Server {
                 break;
             case 'credoq_verify_business_journey':
                 $result = self::verify_business_journey( $args );
+                if ( isset( $result['error'] ) ) return self::rpc_error( $id, -32602, $result['error'] );
+                break;
+            case 'credoq_propose_creation':
+                $result = Credoq_MCP_Admin_Expansion::propose_creation( (string) ($args['resource'] ?? ''), (array) ($args['data'] ?? []) );
+                if ( isset( $result['error'] ) ) return self::rpc_error( $id, -32602, $result['error'] );
+                break;
+            case 'credoq_apply_creation':
+                $result = Credoq_MCP_Admin_Expansion::apply_creation( $args );
                 if ( isset( $result['error'] ) ) return self::rpc_error( $id, -32602, $result['error'] );
                 break;
             default:

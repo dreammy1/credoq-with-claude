@@ -24,11 +24,12 @@ abstract class AI_Driver {
 	/**
 	 * Send a message to the AI and handle tool calls.
 	 *
-	 * @param string $prompt The user prompt.
+	 * @param string $prompt  The user prompt.
 	 * @param array  $history Optional conversation history.
+	 * @param string $context The execution context ('admin' or 'customer').
 	 * @return array { text: string, history: array }
 	 */
-	abstract public function chat( string $prompt, array $history = [] ) : array;
+	abstract public function chat( string $prompt, array $history = [], string $context = 'admin' ) : array;
 
 	/**
 	 * Convert a standard MCP tool definition to the provider's native function-calling format.
@@ -38,17 +39,19 @@ abstract class AI_Driver {
 	/**
 	 * Fetch available tools from the CredoQ MCP Server.
 	 */
-	protected function get_mcp_tools() : array {
+	protected function get_mcp_tools( string $context = 'admin' ) : array {
 		if ( ! class_exists( 'Credoq_MCP_Server' ) ) return [];
 		
-		// Use reflection to get the private tools() result if needed, 
-		// or ideally Credoq_MCP_Server provides a public method.
-		$ref = new \ReflectionClass( 'Credoq_MCP_Server' );
-		if ( ! $ref->hasMethod( 'tools' ) ) return [];
-		
-		$method = $ref->getMethod( 'tools' );
-		$method->setAccessible( true );
-		$tools = $method->invoke( null );
+		if ( method_exists( 'Credoq_MCP_Server', 'list_scoped_tools' ) ) {
+			$tools = \Credoq_MCP_Server::list_scoped_tools( $context );
+		} else {
+			// Fallback if the MCP server hasn't been updated yet
+			$ref = new \ReflectionClass( 'Credoq_MCP_Server' );
+			if ( ! $ref->hasMethod( 'tools' ) ) return [];
+			$method = $ref->getMethod( 'tools' );
+			$method->setAccessible( true );
+			$tools = $method->invoke( null );
+		}
 
 		$formatted = [];
 		foreach ( $tools as $tool ) {

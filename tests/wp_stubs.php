@@ -26,6 +26,12 @@ if (!function_exists('absint')) { function absint($v) { return abs((int)$v); } }
 if (!function_exists('wp_json_encode')) { function wp_json_encode($v) { return json_encode($v); } }
 if (!function_exists('get_current_user_id')) { function get_current_user_id() { return 0; } }
 if (!function_exists('wp_generate_password')) { function wp_generate_password($len = 12, $special = true) { return substr(str_shuffle('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'), 0, $len); } }
+if (!function_exists('wp_generate_uuid4')) { function wp_generate_uuid4() { return sprintf('%04x%04x-%04x-%04x-%04x-%04x%04x%04x', mt_rand(0, 0xffff), mt_rand(0, 0xffff), mt_rand(0, 0xffff), mt_rand(0, 0x0fff) | 0x4000, mt_rand(0, 0x3fff) | 0x8000, mt_rand(0, 0xffff), mt_rand(0, 0xffff), mt_rand(0, 0xffff)); } }
+if (!function_exists('set_transient')) { function set_transient($k, $v, $e = 0) { global $__transients; $__transients[$k] = $v; return true; } }
+if (!function_exists('get_transient')) { function get_transient($k) { global $__transients; return $__transients[$k] ?? false; } }
+if (!function_exists('delete_transient')) { function delete_transient($k) { global $__transients; unset($__transients[$k]); return true; } }
+function wp_hash_password($p) { return 'hashed_' . $p; }
+function wp_check_password($p, $h) { return 'hashed_' . $p === $h; }
 if (!function_exists('current_time')) { 
     function current_time($fmt, $gmt = false) {
         if ($fmt === 'mysql') return gmdate('Y-m-d H:i:s');
@@ -57,8 +63,19 @@ if (!function_exists('wp_unslash')) { function wp_unslash($s) { return $s; } }
 if (!function_exists('untrailingslashit')) { function untrailingslashit($s) { return rtrim($s, '/'); } }
 if (!function_exists('wp_parse_url')) { function wp_parse_url($u, $c = -1) { return parse_url($u, $c); } }
 if (!function_exists('get_bloginfo')) { function get_bloginfo($k) { return 'Test Site'; } }
-if (!function_exists('get_option')) { function get_option($k, $default = false) { return $default; } }
-if (!function_exists('update_option')) { function update_option($k, $v) { return true; } }
+if (!function_exists('get_option')) { 
+    function get_option($k, $default = false) { 
+        global $__options;
+        return $__options[$k] ?? $default;
+    } 
+}
+if (!function_exists('update_option')) { 
+    function update_option($k, $v) { 
+        global $__options;
+        $__options[$k] = $v;
+        return true;
+    } 
+}
 if (!function_exists('get_userdata')) { function get_userdata($id) { return (object)['user_email' => 'test@example.com', 'display_name' => 'Test User']; } }
 if (!function_exists('wp_kses_post')) { function wp_kses_post($s) { return $s; } }
 if (!function_exists('check_admin_referer')) { function check_admin_referer($a) { return true; } }

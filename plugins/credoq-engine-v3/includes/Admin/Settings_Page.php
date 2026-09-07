@@ -47,8 +47,10 @@ class Settings_Page {
 			$cur['ai_openai_key']        = sanitize_text_field( $_POST['ai_openai_key']        ?? '' );
 			$cur['ai_grok_key']          = sanitize_text_field( $_POST['ai_grok_key']          ?? '' );
 			$cur['ai_deepseek_key']      = sanitize_text_field( $_POST['ai_deepseek_key']      ?? '' );
+			$cur['ai_github_key']        = sanitize_text_field( $_POST['ai_github_key']        ?? '' );
 			$cur['ai_admin_provider']    = sanitize_key( $_POST['ai_admin_provider']           ?? 'gemini' );
 			$cur['ai_customer_provider'] = sanitize_key( $_POST['ai_customer_provider']        ?? 'gemini' );
+			$cur['ai_assistant_enabled'] = ! empty( $_POST['ai_assistant_enabled'] ) ? 1 : 0;
 
 			update_option( self::OPT, $cur );
 			// Sync the debug mode option separately so credoq_log() can read it cheaply.
@@ -150,6 +152,26 @@ class Settings_Page {
 							<tr>
 								<th><?php esc_html_e( 'DeepSeek Key', 'credoq-engine' ); ?></th>
 								<td><input type="password" name="ai_deepseek_key" value="<?php echo esc_attr( $s['ai_deepseek_key'] ?? '' ); ?>" class="regular-text"></td>
+							</tr>
+							<tr>
+								<th><?php esc_html_e( 'GitHub Models Key', 'credoq-engine' ); ?></th>
+								<td><input type="password" name="ai_github_key" value="<?php echo esc_attr( $s['ai_github_key'] ?? '' ); ?>" class="regular-text"></td>
+							</tr>
+						</table>
+					</div>
+
+					<div class="credoq-card">
+						<h2 class="credoq-section-title"><?php esc_html_e( 'Deployment', 'credoq-engine' ); ?></h2>
+						<table class="form-table">
+							<tr>
+								<th><?php esc_html_e( 'Enable AI Assistant', 'credoq-engine' ); ?></th>
+								<td>
+									<label class="credoq-switch">
+										<input type="checkbox" name="ai_assistant_enabled" value="1" <?php checked( ! empty( $s['ai_assistant_enabled'] ) ); ?>>
+										<span class="credoq-switch-track"><span class="credoq-switch-thumb"></span></span>
+									</label>
+									<p class="description"><?php esc_html_e( 'If enabled, a floating AI chat bubble will appear on your website for customers.', 'credoq-engine' ); ?></p>
+								</td>
 							</tr>
 						</table>
 					</div>
