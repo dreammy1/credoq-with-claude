@@ -106,10 +106,12 @@ jobs:
           SITE_URL: ${{ secrets.CREDOQ_TEST_URL }}
           TEST_USER: ${{ secrets.CREDOQ_TEST_USER }}
           TEST_PASSWORD: ${{ secrets.CREDOQ_TEST_APP_PASSWORD }}
+          LOGIN_PASSWORD: ${{ secrets.CREDOQ_TEST_LOGIN_PASSWORD }}
         run: |
           test -n "$SITE_URL"
           test -n "$TEST_USER"
           test -n "$TEST_PASSWORD"
+          test -n "$LOGIN_PASSWORD"
           case "$SITE_URL" in *localhost*|*127.0.0.1*) ;; *) echo "Live audit URL accepted: $SITE_URL";; esac
       - name: Publish audit contract
         run: |

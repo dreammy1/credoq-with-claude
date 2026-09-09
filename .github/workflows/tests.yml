@@ -36,7 +36,7 @@ jobs:
       - name: Boot a headless WordPress + SQLite instance with all 5 plugins active
         run: |
           chmod +x tests/track-a-admin-settings/setup-wordpress.sh
-          tests/track-a-admin-settings/setup-wordpress.sh /tmp/wpsite ${{ github.workspace }}/plugins
+          tests/track-a-admin-settings/setup-wordpress.sh /tmp/wpsite "${{ github.workspace }}/plugins"
       - name: Run Track A — every admin setting toggled On/Off against real plugin code
         run: |
           chmod +x tests/track-a-admin-settings/run-track-a.sh
@@ -65,7 +65,11 @@ jobs:
         working-directory: tests/track-b-e2e
         run: |
           node annotate-failures.js
-          test -f test-results/results.json && node -e "
+          if [ ! -f test-results/results.json ]; then
+            echo "::error::Playwright failed to generate results.json — check logs for a crash."
+            exit 1
+          fi
+          node -e "
             const d = require('./test-results/results.json');
             process.exit(d.stats && d.stats.unexpected > 0 ? 1 : 0);
           "

@@ -7,7 +7,7 @@
 # Test info
 
 - Name: dashboard.spec.js >> Dashboard SPA Functionality >> displays membership credits and ledger
-- Location: tests/dashboard.spec.js:113:3
+- Location: tests/dashboard.spec.js:120:3
 
 # Error details
 
